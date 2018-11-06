@@ -1,14 +1,29 @@
-detail = 60;
+detail = 30; // decrease to speed up rendering
+
+//parameters to make nice side-aligned ringster
+//chip_x = 22;
+//chip_y = 33;
+//chip_z = 2;
+//top_plate_front_curvature = 1;
+//top_plate_back_curvature = 0;
+//ring_front_curvature = 15;
+//ring_back_curvature = 0;
+//ring_width = 6;
+//ring_height = chip_x;
+//ring_position = 8; //chip_x = 22, width = 6: min = 8, max = 33
+//ring_curvature = chip_x / 2;
+//finger_diameter = 20;
 
 chip_x = 22;
 chip_y = 33;
 chip_z = 2;
-top_plate_curvature = 2;
+top_plate_front_curvature = 1;
+top_plate_back_curvature = 0;
 ring_front_curvature = 15;
 ring_back_curvature = 0;
 ring_width = 6;
 ring_height = chip_x;
-ring_position = 8;
+ring_position = 8; //chip_x = 22, width = 6: min = 8, max = 33
 ring_curvature = chip_x / 2;
 finger_diameter = 20;
 
@@ -19,8 +34,8 @@ ringster();
 module ringster()
 {
     
-    rotate([180, 0, 0])
-    translate([0, 0, - chip_z / 2])
+    rotate([180, 0, 0]) //rotate upside down for printing
+    translate([0, 0, - chip_z / 2]) //place on floor
     union()
     {
         top_plate();
@@ -33,13 +48,14 @@ module ring()
 {
     difference()
     {
-        ring_element();
-        ring_cutout();
-        ring_hole_cutout();
-        ring_incision();
+        ring_element();     //base block
+        ring_cutout();      //minus the ring base
+        ring_hole_cutout(); //minus the finger hole
+        ring_incision();    //minus dent in ring
     }
 }
 
+//thin disk just inside the ring hole
 module ring_incision()
 {
     rotate([90,0,0])
@@ -50,50 +66,71 @@ module ring_incision()
     }
 }
 
+//long cylinder piercing the base block
 module ring_hole_cutout()
 {
     rotate([90,0,0])
-    translate([0, - chip_z / 2 - ring_height / 2, -chip_x])
-    cylinder(chip_y, finger_diameter / 2, finger_diameter / 2, false, $fn=detail);
+    translate([
+        0, 
+        - chip_z / 2 - ring_height / 2,  
+        - chip_y / 2 - 1
+    ])
+    cylinder(chip_y + 2, finger_diameter / 2, finger_diameter / 2, false, $fn=detail);
 }
 
+//base block chunk to be carved
 module ring_element()
 {
     translate([0, 0, - chip_z / 2 - ring_height / 2])
     rotate([0,0,90])
-    both_sided_spade(chip_y, chip_x, ring_height, ring_curvature);
+    both_sided_spade(chip_y, chip_x, ring_height, ring_curvature); //why use spade? Just cube would work
 }
-//ring_cutout();
 
+//cut out the space in front of and behind what will become the ring
 module ring_cutout()
 {
     //front
     rotate([0,180,0])
     translate([
         0,
-        -ring_position,
+        -ring_position - 5, // - 5 for a bit of extra margin
         chip_z / 2 + chip_x / 2
         ])
-    both_sided_spade(ring_height + 1, chip_y, ring_height + 1, ring_front_curvature);
+    both_sided_spade(
+        ring_height + 1, 
+        chip_y + 10, // translated - 5, so y is * -2
+        ring_height + 1,
+        ring_front_curvature
+    );
     
     //back
     rotate([0,180,0])
     translate([
         0,
-        -ring_position + 35 + ring_width,
+        -ring_position + 35 + ring_width + 5, // + 5 for extra margin in case ring shifted too much
         chip_z / 2 + chip_x / 2
         ])
-    both_sided_spade(ring_height + 1, chip_y, ring_height + 1, ring_back_curvature);
+    both_sided_spade(
+        ring_height + 1, 
+        chip_y + 10, // translated + 5, so y is * 2
+        ring_height + 1, 
+        ring_back_curvature
+        );
 }
 
-
+//Mount the microcontroller atop this
 module top_plate()
 {
-    both_sided_spade(chip_x, chip_y, chip_z, top_plate_curvature);
+    intersection()
+    {
+        spade(chip_x, chip_y, chip_z, top_plate_back_curvature);
+        rotate([0,0,180])
+        spade(chip_x, chip_y, chip_z, top_plate_front_curvature);
+    }
 }
 
 
-//Spade on both ends
+//A thing that is shaped like U
 module both_sided_spade(x, y, z, rounding)
 {
     intersection()
