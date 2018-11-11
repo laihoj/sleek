@@ -201,19 +201,72 @@ void loop() {
   /****
    * store to variables
   ******/
-  roll =  floor(degrees(atan2(-x, sqrt(y * y + z * z))));
-  pitch = floor(degrees(atan2(y,z)));
-  yaw =   floor(degrees(atan2(magy,magx))); 
+//  roll =  floor(degrees(atan2(-x, sqrt(y * y + z * z))));
+//  pitch = floor(degrees(atan2(y,z)));
+//  //atan2 needs correction for correct quadrant
+//  if(x > 0 && y > 0) ;
+//  if(x > 0 && y < 0) pitch += 180;
+//  if(x < 0 && y > 0) ;
+//  if(x < 0 && y < 0) pitch -= 180;
+roll = 180 * atan (x/sqrt(y*y + z*z))/PI;
+pitch = 180 * atan (y/sqrt(x*x + z*z))/PI;
+
+  yaw =   floor(degrees(atan2(magy,magx))); //too lazy to think about this, yaw not necessary
 
 
   /****
    * Actuate
   ******/
-  String res = "Roll:\t" + (String)roll + "\tPitch:\t" + (String)pitch + "\tYaw\t: " + (String)yaw;
-  Serial.println(res);
+  //String res = "Roll:\t" + (String)roll + "\tPitch:\t" + (String)pitch + "\tYaw\t: " + (String)yaw;
+//  Serial.println(res);
 //  delay(15);
   delay(10);
 
+  /****
+   * Read serial input
+  ******/
+  String response = ""; //set up empty string to be built
+  if (Serial.available() > 0) {
+    // read the incoming byte:
+    int incomingByte = 0;   // for incoming serial data
+    incomingByte = Serial.read();
+
+    //shitty nested ifs is good enough.
+    if(incomingByte == 33) //'!' is starting symbol
+    {
+      while (Serial.available() > 0) {
+        incomingByte = Serial.read();
+        switch(incomingByte) {
+          case 'r': response += (String) map(roll,-90,90,0,9);  //mapping experimental
+          break;
+          case 'p': response += (String) map(pitch,-90,90,0,9); //mapping experimental
+          break;
+          case 'y': response += (String) map(yaw,-140,140,0,9); //mapping experimental
+          break;
+          case '$': Serial.print('!' + response + '$');
+          continue;
+          default: break;
+        }
+      }
+    }
+  }
+
+  /*
+  ASCII cheat sheet
+  '!' == 33
+  '$' == 36 <- Dollar sign
+  '0' == 48
+  '1' == 49
+  '2' == 50
+  '3' == 51
+  '4' == 52
+  '5' == 53
+  '6' == 54
+  '7' == 55
+  '8' == 56
+  '9' == 57
+  
+  */
 }
 
 
