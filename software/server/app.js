@@ -2,7 +2,6 @@ var bodyParser 				= require("body-parser"),
 	mongoose 				= require("mongoose"),
 	express 				= require("express"),
 	request					= require("request"),
-	path					= require("path"),
 	flash					= require("connect-flash"),
 	passport 				= require("passport"),
 	LocalStrategy 			= require("passport-local"),
@@ -24,8 +23,6 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({extended:true}));
-app.use(express.static(path.join(__dirname + '.../public')));
-app.use(express.static(path.join(__dirname + '.../views')));
 app.use(methodOverride("_method"));
 app.use(flash());
 
