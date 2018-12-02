@@ -1,33 +1,25 @@
 {
-  "name": "stamps",
+  "name": "sleek_server",
   "version": "1.0.0",
-  "description": "Generic stamp management platform service solution",
+  "description": "",
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node software/server/app.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/laihoj/Stamps.git"
-  },
-  "author": "Jaakko Laiho",
+  "author": "jaakko laiho",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/laihoj/Stamps/issues"
-  },
-  "homepage": "https://github.com/laihoj/Stamps#readme",
   "dependencies": {
-    "body-parser": "^1.18.2",
+    "body-parser": "^1.18.3",
     "connect-flash": "^0.1.1",
-    "ejs": "^2.5.8",
-    "express": "^4.16.3",
+    "ejs": "^2.6.1",
+    "express": "^4.16.4",
     "express-session": "^1.15.6",
-    "method-override": "^2.3.10",
-    "mongoose": "^5.0.14",
-    "mongoose-type-email": "^1.0.5",
+    "method-override": "^3.0.0",
+    "mongoose": "^5.3.14",
     "passport": "^0.4.0",
     "passport-local": "^1.0.0",
-    "passport-local-mongoose": "^5.0.0"
+    "passport-local-mongoose": "^5.0.1",
+    "request": "^2.88.0"
   }
 }
