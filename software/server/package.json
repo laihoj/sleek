@@ -5,7 +5,11 @@
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "app.js"
+    "start": "node app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/laihoj/sleek/tree/master/software/server"
   },
   "author": "jaakko laiho",
   "license": "ISC",
