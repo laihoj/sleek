@@ -23,6 +23,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({extended:true}));
+app.set('views', __dirname + '/views/');
 app.use(methodOverride("_method"));
 app.use(flash());
 
@@ -39,7 +40,7 @@ passport.use(new LocalStrategy(User.authenticate()));
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
-var url = process.env.DATABASEURL;
+var url = process.env.DATABASEURL || "mongodb://Admin:admin1@ds123624.mlab.com:23624/sleek";
 mongoose.connect(url, { useNewUrlParser: true });
 
 var domain = process.env.DOMAIN || "localhost:3000";
@@ -59,7 +60,7 @@ app.post("/users", function(req,res){
 			res.redirect("/");
 		} else {
 			passport.authenticate("local")(req, res, function() {
-				res.redirect(req.session.redirectTo || '/users/' +req.user.username);
+				res.redirect(req.session.redirectTo || '/users/' + req.user.username);
 				delete req.session.redirectTo;
 			}
 		)}
@@ -76,7 +77,7 @@ app.post("/login", passport.authenticate("local", {failureRedirect: "/login", fa
 		res.redirect("/login");
 	} else {
 		req.flash("success", "Logged in");
-		res.redirect(req.session.redirectTo || '/users/' +req.user.username);
+		res.redirect(req.session.redirectTo || '/users/' + req.user.username);
 		delete req.session.redirectTo;
 	}
 });
