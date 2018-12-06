@@ -42,7 +42,7 @@ passport.use(new LocalStrategy(User.authenticate()));
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
-var url = process.env.DATABASEURL;
+var url = process.env.DATABASEURL || "mongodb://Admin:admin1@ds123624.mlab.com:23624/sleek";
 mongoose.connect(url, { useNewUrlParser: true });
 
 var domain = process.env.DOMAIN || "localhost:3000";
@@ -54,6 +54,15 @@ app.get("/", function(req, res) {
 	res.render("index");
 });
 
+app.get("/api/devices", async function(req,res) {
+	let devices = await db.devices();
+	res.send(devices);
+});
+
+app.get("/api/devices/:username", async function(req,res) {
+	let devices = await db.getDevicesByUser(req.params.username);
+	res.send(devices);
+});
 
 app.get("/devices", function(req,res) {
 	res.render("devices");
