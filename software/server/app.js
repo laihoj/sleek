@@ -42,7 +42,7 @@ passport.use(new LocalStrategy(User.authenticate()));
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
-var url = process.env.DATABASEURL || "mongodb://Admin:admin1@ds123624.mlab.com:23624/sleek";
+var url = process.env.DATABASEURL;
 mongoose.connect(url, { useNewUrlParser: true });
 
 var domain = process.env.DOMAIN || "localhost:3000";
