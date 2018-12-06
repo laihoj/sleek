@@ -51,12 +51,20 @@ const db = require('./db.js');
 
 
 
-app.use('/devices', require("./routes/devices"));
+// app.use('/devices', require("./routes/devices"));
 
 app.get("/", function(req, res) {
 	res.render("index");
 });
 
+
+app.get("/", async function(req,res) {
+	let devices = await db.devices();
+	if(devices) {
+		res.locals.devices = devices;
+	}
+	res.render("devices");
+});
 
 app.post("/users", function(req,res){
 	var newUser = {
