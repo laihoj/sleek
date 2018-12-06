@@ -58,7 +58,7 @@ app.get("/", function(req, res) {
 });
 
 
-app.get("/", async function(req,res) {
+app.get("/devices", async function(req,res) {
 	let devices = await db.devices();
 	if(devices) {
 		res.locals.devices = devices;
