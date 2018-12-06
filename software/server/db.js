@@ -6,6 +6,7 @@ const mongoose = require('mongoose')
 var url = process.env.DATABASEURL;
 mongoose.connect(url, { useNewUrlParser: true });
 
+const User = require("./models/user");
 const Device = require("./models/device");
 
 
@@ -29,6 +30,12 @@ exports.saveDevice = async function(device_address, device_uuid, device_name, de
 		user: device_user
 	});
  	return device.save();
+}
+
+exports.saveUser = async function(username, password) {
+	const newUser = new User({username:username});
+	await newUser.setPassword(password);
+	return newUser.save();
 }
 
 // exports.users = async function() {

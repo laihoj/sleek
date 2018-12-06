@@ -1,5 +1,4 @@
 var bodyParser 				= require("body-parser"),
-	mongoose 				= require("mongoose"),
 	express 				= require("express"),
 	request					= require("request"),
 	flash					= require("connect-flash"),
@@ -42,9 +41,6 @@ passport.use(new LocalStrategy(User.authenticate()));
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
-var url = process.env.DATABASEURL;
-mongoose.connect(url, { useNewUrlParser: true });
-
 var domain = process.env.DOMAIN || "localhost:3000";
 
 const db = require('./db.js');
@@ -78,21 +74,16 @@ app.post("/devices", async function(req,res) {
 	res.redirect("/devices");
 });
 
-app.post("/users", function(req,res){
-	var newUser = {
-		username: req.body.username
-	};
-	User.register(new User(newUser), req.body.password, function(err, user) {
-		if(err) {
-			console.log(err);
-			res.redirect("/");
-		} else {
-			passport.authenticate("local")(req, res, function() {
-				res.redirect(req.session.redirectTo || '/users/' +req.user.username);
-				delete req.session.redirectTo;
-			}
-		)}
-	});
+app.post("/users", async function(req,res){
+	let user = await db.saveUser(req.body.username, req.body.password);
+	if(user) {
+		passport.authenticate("local")(req, res, function() {
+			res.redirect(req.session.redirectTo || '/users/' +req.user.username);
+			delete req.session.redirectTo;
+		});
+	} else {
+		res.redirect("/");
+	}
 });
 
 app.get("/users/:user", login.isAuthenticated, async function(req,res){
