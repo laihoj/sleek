@@ -25,11 +25,14 @@ ring_width = 6;
 ring_height = chip_x;
 ring_position = 8; //chip_x = 22, width = 6: min = 8, max = 33
 ring_curvature = chip_x / 2;
-finger_diameter = 20;
+finger_diameter = 18;
 
 
-ringster();
 
+difference() {
+    ringster();
+    translate([0,0, 20])cube([5,50,10], true);
+}
 
 module ringster()
 {
