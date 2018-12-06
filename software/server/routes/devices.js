@@ -5,7 +5,10 @@ var Device = require("../models/device");
 const db = require('./db.js');
 
 router.get("/", function(req,res) {
-	res.locals.devices = await db.devices();
+	let devices = await db.devices();
+	if(devices) {
+		res.locals.devices = devices;
+	}
 	res.render("devices");
 });
 
