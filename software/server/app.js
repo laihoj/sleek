@@ -55,11 +55,7 @@ app.get("/", function(req, res) {
 });
 
 
-app.get("/devices", async function(req,res) {
-	let devices = await db.devices();
-	if(devices) {
-		res.locals.devices = devices;
-	}
+app.get("/devices", function(req,res) {
 	res.render("devices");
 });
 
@@ -90,7 +86,11 @@ app.post("/users", function(req,res){
 	});
 });
 
-app.get("/users/:user", login.isAuthenticated, function(req,res){
+app.get("/users/:user", login.isAuthenticated, async function(req,res){
+	let devices = await db.getDevicesByUser(req.user.username);
+	if(devices) {
+		res.locals.devices = devices;
+	}
 	res.render("profile");
 });
 

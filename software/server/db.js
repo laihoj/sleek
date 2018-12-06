@@ -12,8 +12,12 @@ exports.devices = async function() {
 	return Device.find({}).exec();
 }
 
-exports.device = async function(address) {
+exports.getDeviceByAddress = async function(address) {
 	return Device.find({address: address}).exec();
+}
+
+exports.getDevicesByUser = async function(user) {
+	return Device.find({user: user}).exec();
 }
 
 exports.saveDevice = async function(device_address, device_uuid, device_name, device_user) {
