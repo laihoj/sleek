@@ -50,9 +50,6 @@ var domain = process.env.DOMAIN || "localhost:3000";
 const db = require('./db.js');
 
 
-
-// app.use('/devices', require("./routes/devices"));
-
 app.get("/", function(req, res) {
 	res.render("index");
 });
@@ -64,6 +61,16 @@ app.get("/devices", async function(req,res) {
 		res.locals.devices = devices;
 	}
 	res.render("devices");
+});
+
+app.post("/devices", async function(req,res) {
+	let device = await db.saveDevice(
+		req.body.device_address, 
+		req.body.device_UUID, 
+		req.body.device_name, 
+		req.body.device_user);
+	//todo? error handling
+	res.redirect("/devices");
 });
 
 app.post("/users", function(req,res){
