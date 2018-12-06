@@ -10,6 +10,7 @@ var bodyParser 				= require("body-parser"),
 	app						= express();
 
 var User = require("./models/user");
+var Device = require("./models/device");
 
 var login = require('./login.js');
 
@@ -45,6 +46,12 @@ var url = process.env.DATABASEURL;
 mongoose.connect(url, { useNewUrlParser: true });
 
 var domain = process.env.DOMAIN || "localhost:3000";
+
+const db = require('./db.js');
+
+
+
+app.use('/devices', require("./routes/devices"));
 
 app.get("/", function(req, res) {
 	res.render("index");

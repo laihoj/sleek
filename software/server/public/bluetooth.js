@@ -1,3 +1,5 @@
+
+//didnt work
 function connectToBTDeviceByUUID(uuid) {
   let options = {
     filters: [
@@ -11,3 +13,10 @@ function connectToBTDeviceByUUID(uuid) {
     // Do something with the device.
   })
 }
+
+
+//does work
+navigator.bluetooth.requestDevice({filters: [{name:'HMSoft'}]}).then(function(device) {
+    console.log('Name: ' + device.name);
+    // Do something with the device.
+  })
