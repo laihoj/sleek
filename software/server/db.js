@@ -22,6 +22,10 @@ exports.getDevicesByUser = async function(user) {
 	return Device.find({user: user}).exec();
 }
 
+// exports.getDeviceByAddress = async function(device_address) {
+// 	return Device.find({device_address: device_address}).exec();
+// }
+
 exports.saveDevice = async function(device_address, device_uuid, device_name, device_user) {
 	var device = new Device({
 		address: device_address,

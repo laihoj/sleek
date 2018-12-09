@@ -50,6 +50,19 @@ app.get("/", function(req, res) {
 	res.render("index");
 });
 
+app.get("/api/datapoints", async function(req, res) {
+	let datapoints = await db.datapoints();
+	res.send(datapoints);
+});
+
+app.post("/api/datapoints", async function(req, res) {
+	let datapoint = await db.saveDatapoint(
+		req.body.device_address,
+		req.body.timestamp, 
+		req.body.data);
+	res.redirect("/api");
+});
+
 app.get("/api/devices", async function(req,res) {
 	let devices = await db.devices();
 	res.send(devices);
@@ -58,6 +71,10 @@ app.get("/api/devices", async function(req,res) {
 app.get("/api/devices/:username", async function(req,res) {
 	let devices = await db.getDevicesByUser(req.params.username);
 	res.send(devices);
+});
+
+app.get("/api", function(req, res) {
+	res.send("API");
 });
 
 app.get("/devices", function(req,res) {
