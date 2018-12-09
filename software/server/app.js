@@ -4,6 +4,7 @@ var bodyParser 				= require("body-parser"),
 	flash					= require("connect-flash"),
 	passport 				= require("passport"),
 	LocalStrategy 			= require("passport-local"),
+	passportLocalMongoose 	= require("passport-local-mongoose"),
 	methodOverride			= require("method-override"),
 	app						= express();
 
