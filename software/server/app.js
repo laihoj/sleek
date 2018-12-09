@@ -11,7 +11,7 @@ var bodyParser 				= require("body-parser"),
 var User = require("./models/user");
 var Device = require("./models/device");
 
-var login = require('./login.js');
+var auth = require('./auth.js');
 
 app.use(require("express-session")({
 	secret: process.env.SECRET || "salaisuus",
@@ -86,7 +86,7 @@ app.post("/users", async function(req,res){
 	}
 });
 
-app.get("/users/:user", login.isAuthenticated, async function(req,res){
+app.get("/users/:user", auth.isAuthenticated, async function(req,res){
 	let devices = await db.getDevicesByUser(req.user.username);
 	if(devices) {
 		res.locals.devices = devices;
