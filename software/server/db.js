@@ -3,7 +3,7 @@ Mongoose.js and MongoDB
 ********************************************************/
 const mongoose = require('mongoose')
 
-var url = process.env.DATABASEURL;
+var url = process.env.DATABASEURL || "mongodb://Admin2:IaiS2018@ds123624.mlab.com:23624/sleek";
 mongoose.connect(url, { useNewUrlParser: true });
 
 const User = require("./models/user");

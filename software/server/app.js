@@ -60,12 +60,21 @@ app.post("/api/datapoints", async function(req, res) {
 		req.body.device_address,
 		req.body.timestamp, 
 		req.body.data);
-	res.redirect("/api");
+	res.send(datapoint);
 });
 
 app.get("/api/devices", async function(req,res) {
 	let devices = await db.devices();
 	res.send(devices);
+});
+
+app.post("/api/devices", async function(req,res) {
+	let device = await db.saveDevice(
+		req.body.device_address, 
+		req.body.device_UUID, 
+		req.body.device_name, 
+		req.body.device_user);
+	res.send(device);
 });
 
 app.get("/api/devices/:username", async function(req,res) {
