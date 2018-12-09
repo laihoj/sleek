@@ -83,7 +83,7 @@ app.get("/api/devices/:username", async function(req,res) {
 });
 
 app.get("/api", function(req, res) {
-	res.send("API");
+	res.render("api");
 });
 
 app.get("/devices", function(req,res) {

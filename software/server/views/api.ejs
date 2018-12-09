@@ -1,9 +1,32 @@
 <% include ./partials/header %>
+<style>
+table, th, td {
+  border: 1px solid black;
+}
+</style>
+<table style="width:100%;">
+  <tr>
+    <th>Model</th>
+    <th>GET</th> 
+    <th>POST</th>
+  </tr>
+  <tr>
+    <td>Devices</td>
+    <td><a href="/api/devices">GET</a></td> 
+    <td><% include ./partials/newdeviceform %></td>
+  </tr>
+  <tr>
+    <td>Datapoints</td>
+    <td><a href="/api/datapoints">GET</a></td> 
+    <td><% include ./partials/newdatapointform %></td>
+  </tr>
+</table>
+<br>
 
-<a href="/api/devices">devices</a>
-<% include ./partials/newdeviceform %>
 
-<a href="/api/datapoints">datapoints</a>
-<% include ./partials/newdatapointform %>
+<br>
+
+
+
 
 <% include ./partials/footer %>
