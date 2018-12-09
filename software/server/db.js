@@ -8,7 +8,21 @@ mongoose.connect(url, { useNewUrlParser: true });
 
 const User = require("./models/user");
 const Device = require("./models/device");
+const Datapoint = require("./models/datapoint");
 
+
+exports.datapoints = async function() {
+	return Datapoint.find({}).exec();
+}
+
+exports.saveDatapoint = async function(device_address, timestamp, data) {
+	var datapoint = new Datapoint({
+		device_address: device_address,
+		timestamp: timestamp,
+		data: data
+	});
+ 	return datapoint.save();
+}
 
 exports.devices = async function() {
 	return Device.find({}).exec();
