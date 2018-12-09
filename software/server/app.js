@@ -68,6 +68,16 @@ app.get("/api/devices", async function(req,res) {
 	res.send(devices);
 });
 
+app.get("/api/devices/user/:user", async function(req,res) {
+	let devices = await db.getDevicesByUser(req.params.user);
+	res.send(devices);
+});
+
+app.get("/api/devices/address/:address", async function(req,res) {
+	let devices = await db.getDeviceByAddress(req.params.address);
+	res.send(devices);
+});
+
 app.post("/api/devices", async function(req,res) {
 	let device = await db.saveDevice(
 		req.body.device_address, 

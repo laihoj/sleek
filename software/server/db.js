@@ -28,9 +28,9 @@ exports.devices = async function() {
 	return Device.find({}).exec();
 }
 
-// exports.getDeviceByAddress = async function(address) {
-// 	return Device.find({address: address}).exec();
-// }
+exports.getDeviceByAddress = async function(address) {
+	return Device.findOne({address: address}).exec();
+}
 
 exports.getDevicesByUser = async function(user) {
 	return Device.find({user: user}).exec();
