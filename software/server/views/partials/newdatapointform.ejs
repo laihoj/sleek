@@ -1,0 +1,10 @@
+<h1>new datapoint</h1>
+<form action="/api/datapoint" method="post">
+	Datapoint device address:<br>
+		<input type="text" name="device_address" placeholder="00-11-22-33-44-55"><br>
+	Timestamp:<br>
+  		<input type="text" name="timestamp" placeholder="<%= Date.now() %>"><br>
+	Data:<br>
+		<input type="text" name="data" placeholder="Data in JSON..."><br>
+	<input type="submit"><br>
+</form>

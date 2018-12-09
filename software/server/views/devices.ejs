@@ -4,22 +4,7 @@
 	<div class="container">
 		<div class="row">
 			<div class="u-full-width">
-				<h1>new device</h1>
-				<form action="/devices" method="post">
-			  		Device address:<br>
-						<input type="text" name="device_address" placeholder="00-11-22-33-44-55"><br>
-					Device UUID:<br>
-				  		<input type="text" name="device_uuid" placeholder="74278BDA-B644-4520-8F0C-720EAF059935"><br>
-					Device name:<br>
-				  		<input type="text" name="device_name" placeholder="SleekXXXX"><br>
-					Device user:<br>
-			 		<%if(!currentUser) {%>
-						<input type="text" name="device_user" placeholder="Your name please"><br>
-					<% } else { %>
-						<input type="text" name="device_user" placeholder="Your name please" value="<%= currentUser.username %>"><br>
-					<% } %>	
-					<input type="submit"><br>
-				</form>
+			<% include ./partials/newdeviceform %>
 			</div>
 		</div>
 	</div>
