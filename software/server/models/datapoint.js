@@ -4,7 +4,6 @@ var datapointSchema =  mongoose.Schema({
 	device_address: String,
 	timestamp: Date,
 	data: String
-	
 });
 
 
