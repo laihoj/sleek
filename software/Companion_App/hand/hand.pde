@@ -136,7 +136,6 @@ class Hand {
     }
   }
   
-  
   Hand add(Finger finger) {
     this.fingers.add(finger);
     return this;
