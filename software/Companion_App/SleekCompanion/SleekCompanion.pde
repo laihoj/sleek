@@ -1,6 +1,8 @@
 //Own library containing basic UI stuff
 import hailo.*;
 import widgets.Button;
+import widgets.Label;
+import commands.Print;
 import displays.GradientRect;
 
 //required for BT enabling on startup
@@ -19,6 +21,9 @@ String info = "";
 KetaiList klist;
 
 PApplet parent = this;
+View MAIN_MENU;
+
+SensorNodeCollection nodes;
 //********************************************************************
 // The following code is required to enable bluetooth at startup.
 // Remember to update sketch permissions!
@@ -46,8 +51,11 @@ void setup() {
   fullScreen();
   //size(360,640);
   new App(this, Logging.DEBUG);
+  
+  new LargeLabelStyle("Label");
+  
   //background(255, 128, 0);
-  View MAIN_MENU = new View(new Point(), "Main menu", "Container");
+  MAIN_MENU = new View(new Point(), "Main menu", "Container");
   MAIN_MENU.add(new Button(new Point(App.width() / 2, App.height() * 1 / 5),"Keyboard", "Button", new KeyboardToggle()));
   MAIN_MENU.add(new Button(new Point(App.width() / 2, App.height() * 2 / 5),"Discover", "Button", new BTDiscover()));
   MAIN_MENU.add(new Button(new Point(App.width() / 2, App.height() * 3 / 5),"Connect", "Button", new BTConnect()));
@@ -56,11 +64,6 @@ void setup() {
   MAIN_MENU.add(new GradientRect(0,132,180,0,200,180));
   //start listening for BT connections
   bt.start();
-  
-  bt.connectToDeviceByName("Sleek0101");
-  bt.connectToDeviceByName("00:0E:0E:0D:7B:01");
-  bt.connectToDeviceByName("Sleek0100");
-  bt.connectToDeviceByName("00:0E:0E:0D:77:9D");
 }
 
 public void draw() {}
@@ -93,44 +96,4 @@ void onKetaiListSelection(KetaiList klist)
 
   //dispose of list for now
   klist = null;
-}
-
-public class BTDiscover extends AbstractCommand {
-  BTDiscover() {}
-  public void execute() {
-    bt.discoverDevices();
-  }
-}
-
-public class BTStart extends AbstractCommand {
-  BTStart() {}
-  public void execute() {
-    bt.start();
-  }
-}
-
-public class KeyboardToggle extends AbstractCommand {
-  KeyboardToggle() {}
-  public void execute() {
-    KetaiKeyboard.toggle(parent);
-  }
-}
-
-
-
-
-
-public class BTConnect extends AbstractCommand {
-  BTConnect() {}
-  public void execute() {
-    //If we have not discovered any devices, try prior paired devices
-    if(bt.getDiscoveredDeviceNames().size() > 0) {
-    ArrayList<String> list = bt.getDiscoveredDeviceNames();
-      klist = new KetaiList(parent, list);
-    }
-    else if(bt.getPairedDeviceNames().size() > 0) {
-      ArrayList<String> list = bt.getPairedDeviceNames();
-      klist = new KetaiList(parent, list);
-    }
-  }
 }

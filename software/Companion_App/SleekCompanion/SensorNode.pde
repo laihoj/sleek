@@ -136,19 +136,25 @@ public class SensorNode implements java.io.Serializable {
 public class SensorNodeCollection implements java.io.Serializable {
   HashMap<String, SensorNode> nodesByName = new HashMap<String, SensorNode>();
   HashMap<String, SensorNode> nodesByAddress = new HashMap<String, SensorNode>();
+  
   public SensorNodeCollection() {}
+  
   public void putByName(String name, SensorNode node) {
     nodesByName.put(name, node);
   }
+  
   public void putByAddress(String address, SensorNode node) {
     nodesByAddress.put(address, node);
   }
+  
   public SensorNode getByName(String name) {
     return nodesByName.get(name);
   }
+  
   public SensorNode getByAddress(String address) {
     return nodesByAddress.get(address);
   }
+  
   public ArrayList<SensorNode> values() {
     ArrayList<SensorNode> byName = new ArrayList<SensorNode>();//(ArrayList) (nodesByName.values());
     ArrayList<SensorNode> byAddress = new ArrayList<SensorNode>();// (ArrayList) (nodesByAddress.values());
@@ -162,6 +168,7 @@ public class SensorNodeCollection implements java.io.Serializable {
     byName.addAll(byAddress);
     return byName;
   }
+  
   public int size() {
     return values().size();
   }
