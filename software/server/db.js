@@ -3,7 +3,7 @@ Mongoose.js and MongoDB
 ********************************************************/
 const mongoose = require('mongoose')
 
-var url = process.env.DATABASEURL;
+var url = process.env.DATABASEURL || "mongodb://Admin2:IaiS2018@ds123624.mlab.com:23624/sleek";
 mongoose.connect(url, { useNewUrlParser: true });
 
 const User = require("./models/user");
@@ -13,6 +13,11 @@ const Datapoint = require("./models/datapoint");
 
 exports.datapoints = async function() {
 	return Datapoint.find({}).exec();
+}
+
+exports.datapointsInTimeSpan = async function(start, end) {
+	return Datapoint.find({
+		timestamp:{$gt: start, $lt: end}}).exec();
 }
 
 exports.saveDatapoint = async function(device_address, timestamp, data) {

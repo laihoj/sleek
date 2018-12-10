@@ -51,7 +51,17 @@ app.get("/", function(req, res) {
 });
 
 app.get("/api/datapoints", async function(req, res) {
-	let datapoints = await db.datapoints();
+	let datapoints;
+	if(req.query.start && req.query.end) {
+		datapoints = await db.datapointsInTimeSpan(req.query.start, req.query.end);
+	} else if(req.query.start) {
+		datapoints = await db.datapointsInTimeSpan(req.query.start, Date.now());
+	} else if(req.query.end) {
+		datapoints = await db.datapointsInTimeSpan(0, req.query.end);
+	} else {
+		datapoints = await db.datapoints();
+	}
+	
 	res.send(datapoints);
 });
 
