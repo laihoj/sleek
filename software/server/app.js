@@ -97,6 +97,35 @@ app.post("/api/devices", async function(req,res) {
 	res.send(device);
 });
 
+app.post("/api/gestures", async function(req,res) {
+	let gesture = await db.saveGesture(
+		req.body.start_timestamp, 
+		req.body.end_timestamp, 
+		req.body.label, 
+		req.body.user);
+	res.send(gesture);
+});
+
+// app.get("/api/gestures", async function(req,res) {
+// 	let gestures = await db.gestures();
+// 	res.send(gestures);
+// });
+
+// app.get("/api/gestures/label/:label", async function(req,res) {
+// 	let gestures = await db.getGesturesByLabel(req.params.label);
+// 	res.send(gestures);
+// });
+
+app.get("/api/gestures", async function(req, res) {
+	let gestures;
+	if(req.query.label) {
+		gestures = await db.getGesturesByLabel(req.query.label);
+	} else {
+		gestures = await db.gestures();
+	}
+	res.send(gestures);
+});
+
 app.get("/api/devices/:username", async function(req,res) {
 	let devices = await db.getDevicesByUser(req.params.username);
 	res.send(devices);

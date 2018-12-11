@@ -1,0 +1,15 @@
+<p>Search by timeframe. </p>
+      <ul>
+        <li>If start is left empty, finds all until end.</li>
+        <li>If end is left empty, finds all since start</li>
+      </ul>
+      <form action="/api/datapoints" method="get">
+      <label for="start">Start time</label>
+      <input type="datetime" step=".001" name="start" value="2018-12-10T09:53:25.657Z" placeholder="yyyy-mm-ddThh:mm:ss.mmmZ">
+      <!-- the Z in millisecond is necessary for mongoose time comparison but breaks prefilling form when using datetime-local -->
+      <br>
+      <label for="end">End time</label>
+      <input type="datetime" step=".001" name="end" value="2018-12-10T10:10:25.657Z" placeholder="yyyy-mm-ddThh:mm:ss.mmmZ">
+      <br>
+      <input type="submit">
+      </form>

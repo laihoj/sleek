@@ -9,6 +9,7 @@ mongoose.connect(url, { useNewUrlParser: true });
 const User = require("./models/user");
 const Device = require("./models/device");
 const Datapoint = require("./models/datapoint");
+const Gesture = require("./models/gesture");
 
 
 exports.datapoints = async function() {
@@ -33,6 +34,14 @@ exports.devices = async function() {
 	return Device.find({}).exec();
 }
 
+exports.gestures = async function() {
+	return Gesture.find({}).exec();
+}
+
+exports.getGesturesByLabel = async function(label) {
+	return Gesture.find({label: label}).exec();
+}
+
 exports.getDeviceByAddress = async function(address) {
 	return Device.findOne({address: address}).exec();
 }
@@ -53,6 +62,16 @@ exports.saveDevice = async function(device_address, device_uuid, device_name, de
 		user: device_user
 	});
  	return device.save();
+}
+
+exports.saveGesture = async function(start_timestamp, end_timestamp, label, user) {
+	var gesture = new Gesture({
+		start_timestamp: start_timestamp,
+		end_timestamp: end_timestamp,
+		label: label,
+		user: user
+	});
+ 	return gesture.save();
 }
 
 exports.saveUser = async function(username, password) {

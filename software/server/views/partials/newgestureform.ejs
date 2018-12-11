@@ -1,0 +1,16 @@
+<h1>new gesture</h1>
+<form action="/api/gestures" method="post">
+	Gesture start time:<br>
+		<input type="text" name="start_timestamp" placeholder="yyyy-mm-ddThh:mm:ss.mmmZ"><br>
+	Gesture end time:<br>
+  		<input type="text" name="end_timestamp" placeholder="yyyy-mm-ddThh:mm:ss.mmmZ"><br>
+	Gesture label:<br>
+  		<input type="text" name="label" placeholder="e.g. /'hello/'"><br>
+	Gesture owner (user):<br>
+		<%if(!currentUser) {%>
+		<input type="text" name="user" placeholder="Your name please"><br>
+	<% } else { %>
+		<input type="text" name="user" placeholder="Your name please" value="<%= currentUser.username %>"><br>
+	<% } %>	
+	<input type="submit"><br>
+</form>
