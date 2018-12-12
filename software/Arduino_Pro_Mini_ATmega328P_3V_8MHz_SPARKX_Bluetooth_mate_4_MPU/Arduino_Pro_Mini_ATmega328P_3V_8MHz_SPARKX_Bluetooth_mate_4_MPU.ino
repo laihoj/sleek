@@ -23,42 +23,62 @@
 #include "mpu9250.c"
 #include <Wire.h> //I2C library
 
-
-
-/************************************************************
- * Arduino hardware readings
-*************************************************************/
-//Direct readings from IMU MPU9250
-signed int roll = 0;
-signed int pitch = 0;
-signed int yaw = 0;
-//smoothing values by averaging
-int averageArrayIndex = 0;
-int averageArrayIndexSize = 10;
-signed int rollArr[] = {0,0,0,0,0,0,0,0,0,0};
-signed int pitchArr[] = {0,0,0,0,0,0,0,0,0,0};
-signed int rollAverage = 0;
-signed int pitchAverage = 0;
-
-
-
-
-
 /************************************************************
  * MPU9250 data storage
 *************************************************************/
+//Direct readings from IMU MPU9250
 byte accelData[6];
 byte tempData[2];
 byte gyroData[6];
 byte magnetoData[6];
 
+//Raw readings
+float accelX,accelY,accelZ;
+float gyroX,gyroY,gyroZ;
+float magnetoX,magnetoY,magnetoZ;
+
+//Resolution-adjusted
+float gx, gy, gz; //unit: ???
+float ax, ay, az; //unit: m/s^2
+float mx, my, mz; //unit: ???
+
+//Converted readings
+signed int roll = 0;
+signed int pitch = 0;
+signed int yaw = 0;
+
+//Output
+String response;
+
+/************************************************************
+ * Service parameters
+ * 
+ * outputRangeMin => in outputMode = 1 r,p,y are adjusted to this mapping
+ * outputRangeMax => in outputMode = 1 r,p,y are adjusted to this mapping
+ * outputMode = 0   => position needs to be requested.
+ * outputMode = 1   => constant output of roll,pitch,yaw
+ * outputMode = 2(5) => constant output of acceleration (in raw form)
+ * outputMode = 3(6) => constant output of gyroscope (in raw form)
+ * outputMode = 4(7) => constant output of magnetometer  (in raw form)
+ * userDelay => in outputMode = 0 remember to put delay to 0. otherwise choose self
+*************************************************************/
+
+int outputRangeMin = 0; //mapping
+int outputRangeMax = 9;
+int outputMode = 0;
+int userDelay = 0; //delay in ms
+
+/************************************************************
+ * Flags
+*************************************************************/
+boolean sleeping = true; //not in use?
 
 
 /*----------------------------------------------------------
  * Setup
 ------------------------------------------------------------*/
 
-void setup(){
+void setup() {
 
   
   /*********
@@ -73,17 +93,14 @@ void setup(){
   Wire.begin(); // Begin I2C for mpu9250
   Serial.begin(57600);  // Begin the serial monitor at 9600bps
   delay(100);
-  Serial.println("Started");
 
   /*********
    * MPU setup
   ***********/
   //INIT MPU
-  // wake up device
-  // Clear sleep mode bit (6), enable all sensors
-  writeByte(MPU9250_ADDRESS, PWR_MGMT_1, 0x00);
-  delay(100); // Wait for all registers to reset
-  writeByte(MPU9250_ADDRESS, INT_ENABLE, 0x01);
+  
+  wake();
+  writeByte(MPU9250_ADDRESS, INT_ENABLE, 0x01); //TODO: interrupts
   // Configure Interrupts and Bypass Enable
   // Set interrupt pin active high, push-pull, hold interrupt pin level HIGH
   // until interrupt cleared, clear on read of INT_STATUS, and enable
@@ -104,10 +121,13 @@ void setup(){
 
 void loop() {
   /*********
-   * Read MPU9250
+   * Read MPU9250 - WARNING - MONOLITH
   ***********/
 
-  /*READ ACCELEROMETER*/
+
+  /*********
+   * READ ACCELEROMETER
+  ***********/
   Wire.beginTransmission(SENSOR_I2CADD); //Begin transmission to slave address
   Wire.write(ACCEL_XOUT_H); //Register address within the sensor where the data is to be read from
   Wire.endTransmission();
@@ -118,12 +138,15 @@ void loop() {
     accelData[i] = Wire.read(); //Save the data to a variable
     i++;
   }
-  int accelX = accelData[1] | (int)accelData[0] << 8;
-  int accelY = accelData[3] | (int)accelData[2] << 8;
-  int accelZ = accelData[5] | (int)accelData[4] << 8;
+  accelX = accelData[1] | (int)accelData[0] << 8;
+  accelY = accelData[3] | (int)accelData[2] << 8;
+  accelZ = accelData[5] | (int)accelData[4] << 8;
 
 
-  /*READ TEMPERATURE*/
+
+  /*********
+   * READ TEMPERATURE
+  ***********/
   Wire.beginTransmission(SENSOR_I2CADD); //Begin transmission to slave address
   Wire.write(TEMP_OUT_H); //Register address within the sensor where the data is to be read from
   Wire.endTransmission();
@@ -136,7 +159,11 @@ void loop() {
   }
   int temp = tempData[1] | (int)tempData[0] << 8;
 
-  /*READ GYRO*/
+
+
+  /*********
+   * READ GYRO
+  ***********/
   Wire.beginTransmission(MPU9250_ADDRESS); //Begin transmission to slave address
   Wire.write(GYRO_XOUT_H); //Register address within the sensor where the data is to be read from
   Wire.endTransmission();
@@ -147,11 +174,16 @@ void loop() {
     gyroData[i] = Wire.read(); //Save the data to a variable
     i++;
   }
-  int gyroX = gyroData[1] | (int)gyroData[0] << 8;
-  int gyroY = gyroData[3] | (int)gyroData[2] << 8;
-  int gyroZ = gyroData[5] | (int)gyroData[4] << 8;
-  
-  /*READ MAGNETOMETRI*/
+  gyroX = gyroData[1] | (int)gyroData[0] << 8;
+  gyroY = gyroData[3] | (int)gyroData[2] << 8;
+  gyroZ = gyroData[5] | (int)gyroData[4] << 8;
+
+
+
+
+  /*********
+   * READ MAGNETOMETER
+  ***********/
   //turning magnetometer off and on is a workaround that makes output value update
   writeByte(AK8963_ADDRESS, AK8963_CNTL, 0x00); // Power down magnetometer
   delay(10);
@@ -171,85 +203,146 @@ void loop() {
     rawData[i++] = Wire.read();
   }
 
-  int magnetoX = ((int16_t)rawData[1] << 8) | rawData[0];
-  int magnetoY = ((int16_t)rawData[3] << 8) | rawData[2];
-  int magnetoZ = ((int16_t)rawData[5] << 8) | rawData[4];
+  magnetoX = ((int16_t)rawData[1] << 8) | rawData[0];
+  magnetoY = ((int16_t)rawData[3] << 8) | rawData[2];
+  magnetoZ = ((int16_t)rawData[5] << 8) | rawData[4];
+
 
 
 
 
   
-  /*********
-   * Store data to values
-  ***********/
-
   /****
-   * mapping
+   * Readings readings adjusted by calibration
+   * TODO: make resolution adjustable
   ******/
-
-  //accelerometer stuff
-  float x = accelX * 16.0f / 32768.0f;
-  float y = accelY * 16.0f / 32768.0f;
-  float z = accelZ * 16.0f / 32768.0f;
+  gx = gyroX * 2000.0 / 32768.0f;
+  gy = gyroY * 2000.0 / 32768.0f;
+  gz = gyroZ * 2000.0 / 32768.0f;
+  ax = accelX * 16.0f / 32768.0f;
+  ay = accelY * 16.0f / 32768.0f;
+  az = accelZ * 16.0f / 32768.0f;
+  mx = magnetoX * 10.0f * 4912.0f / 32760.0f;
+  my = magnetoY * 10.0f * 4912.0f / 32760.0f;
+  mz = magnetoZ * 10.0f * 4912.0f / 32760.0f;
   
 
-  //magnetometer stuff
-  float magx = magnetoX * 10.0f * 4912.0f / 32760.0f;
-  float magy = magnetoY * 10.0f * 4912.0f / 32760.0f;
+
+  /****
+   * Output prepared
+  ******/
+
+  roll = 180 * atan (ax/sqrt(ay*ay + az*az))/PI;
+  pitch = 180 * atan (ay/sqrt(ax*ax + az*az))/PI;
+  yaw =   floor(degrees(atan2(my,mx))); //too lazy to think about this, yaw not necessary
+
+
   
 
   /****
-   * store to variables
+   * Write output based on user-defined output mode
   ******/
-//  roll =  floor(degrees(atan2(-x, sqrt(y * y + z * z))));
-//  pitch = floor(degrees(atan2(y,z)));
-//  //atan2 needs correction for correct quadrant
-//  if(x > 0 && y > 0) ;
-//  if(x > 0 && y < 0) pitch += 180;
-//  if(x < 0 && y > 0) ;
-//  if(x < 0 && y < 0) pitch -= 180;
-roll = 180 * atan (x/sqrt(y*y + z*z))/PI;
-pitch = 180 * atan (y/sqrt(x*x + z*z))/PI;
 
-  yaw =   floor(degrees(atan2(magy,magx))); //too lazy to think about this, yaw not necessary
+  //modes 2-4 are processed output, modes 5-7 are raw output. See above for more detail
+  switch(outputMode)
+  {
+    case 0: break; //request based output
+    case 1: Serial.print("!," + (String) getRoll() + 
+                          ',' + (String) getPitch() + 
+                          ',' + (String) getYaw() + ",$"); 
+      break;
+    case 2: Serial.print("!," + (String) getAccel('x') + ',' + (String) getAccel('y') + ',' + (String) getAccel('z') + ",$"); 
+      break;
+    case 3: Serial.print("!," + (String) getGyro('x') + ',' + (String) getGyro('y') + ',' + (String) getGyro('z') + ",$"); 
+      break;
+    case 4: Serial.print("!," + (String) getMag('x') + ',' + (String) getMag('y') + ',' + (String) getMag('z') + ",$"); 
+      break;
+    case 5: Serial.print("!," + (String) getAccel('X') + ',' + (String) getAccel('Y') + ',' + (String) getAccel('Z') + ",$"); 
+      break;
+    case 6: Serial.print("!," + (String) getGyro('X') + ',' + (String) getGyro('Y') + ',' + (String) getGyro('Z') + ",$"); 
+      break;
+    case 7: Serial.print("!," + (String) getMag('X') + ',' + (String) getMag('Y') + ',' + (String) getMag('Z') + ",$"); 
+      break;
+  }
 
-
-  /****
-   * Actuate
-  ******/
-  //String res = "Roll:\t" + (String)roll + "\tPitch:\t" + (String)pitch + "\tYaw\t: " + (String)yaw;
-//  Serial.println(res);
-//  delay(15);
-  delay(10);
-
+  
   /****
    * Read serial input
   ******/
-  String response = ""; //set up empty string to be built
+  
+  response = ""; //set output to empty string
   if (Serial.available() > 0) {
-    // read the incoming byte:
-    int incomingByte = 0;   // for incoming serial data
-    incomingByte = Serial.read();
+    
+    char incomingByte = 0;
+    incomingByte = Serial.read(); // read the incoming byte:
 
-    //shitty nested ifs is good enough.
+    //shitty nested branching is good enough.
+    //using 'continue' instead of 'break' if terminal symbol reached
     if(incomingByte == 33) //'!' is starting symbol
+    {
+      response += '!';
+      response += ','; // dealing with comma separated values is nicer
+      while (Serial.available() > 0) {
+        incomingByte = Serial.read();
+        switch(incomingByte) {
+          case 'r': response += (String) getRoll() + ',';
+            break;
+          case 'p': response += (String) getPitch() + ',';
+            break;
+          case 'y': response += (String) getYaw() + ',';
+            break;
+          case 'a': response += (String) getAccel('x') + ',';
+                    response += (String) getAccel('y') + ',';
+                    response += (String) getAccel('z') + ',';
+            break;
+          case 'g': response += (String) getGyro('x') + ',';
+                    response += (String) getGyro('y') + ',';
+                    response += (String) getGyro('z') + ',';
+            break;
+          case '$': Serial.print(response + '$');
+            continue;
+          default: Serial.print("&Syntax error$");
+            continue;
+        }
+      }
+    } 
+    else if(incomingByte == 63) //'?' is starting symbol
     {
       while (Serial.available() > 0) {
         incomingByte = Serial.read();
         switch(incomingByte) {
-          case 'r': response += (String) map(roll,-90,90,0,9);  //mapping experimental
-          break;
-          case 'p': response += (String) map(pitch,-90,90,0,9); //mapping experimental
-          break;
-          case 'y': response += (String) map(yaw,-140,140,0,9); //mapping experimental
-          break;
-          case '$': Serial.print('!' + response + '$');
-          continue;
-          default: break;
+          case 's': sleep(); Serial.print("#sleeping:1$");
+            continue;
+          case 'w': wake(); Serial.print("#sleeping:0$");
+            continue;
+          case 'o': Serial.print("#ok$");
+            continue;
+          case 'm': outputRangeMax = Serial.parseInt();
+            Serial.print("#outputRangeMax:" + (String)outputRangeMax + "$");
+            continue;
+          case 'n': outputRangeMin = Serial.parseInt();
+            Serial.print("#outputRangeMin:" + (String)outputRangeMin + "$");
+            continue;
+          case 'd': userDelay = Serial.parseInt();
+            Serial.print("#userDelay:" + (String)userDelay + "$");
+            continue;
+          case 'p': outputMode = Serial.parseInt();
+            Serial.print("#outputMode:" + (String)outputMode + "$");
+            continue;
+          default: Serial.print("&Syntax error$");
+            continue;
         }
       }
     }
   }
+  
+  /****
+   * Actuate
+  ******/
+  delay(userDelay);
+}
+
+
 
   /*
   ASCII cheat sheet
@@ -265,36 +358,87 @@ pitch = 180 * atan (y/sqrt(x*x + z*z))/PI;
   '7' == 55
   '8' == 56
   '9' == 57
+  '?' == 63
   
   */
-}
-
-
-
-
-
-
-
-
-
 
 
 /************************************************************
- * Useful functions
+ * Utilities
 *************************************************************/
-
-/*********
- * Data to variables functions
-***********/
-
-
-signed int average(signed int a[]) {
-  signed int sum = 0;
-  for(int i = 0; i < averageArrayIndexSize;  a) {
-    sum += a;
-  }
-  return sum / averageArrayIndexSize;
+int getRoll()
+{
+  return map(roll,-90,90,outputRangeMin,outputRangeMax);   //calibration experimental
 }
+
+int getPitch()
+{
+  return map(pitch,-90,90,outputRangeMin,outputRangeMax);    //calibration experimental
+}
+
+int getYaw()
+{
+  return map(yaw,-140,140,outputRangeMin,outputRangeMax);   //calibration experimental
+}
+
+int getMag(char axis)
+{
+    switch(axis) {
+      case 'x': return mx; break;
+      case 'y': return my; break;
+      case 'z': return mz; break;
+      case 'X': return magnetoX; break;
+      case 'Y': return magnetoY; break;
+      case 'Z': return magnetoZ; break;
+    }
+}
+
+int getAccel(char axis)
+{
+  switch(axis) {
+    case 'x': return ax; break;
+    case 'y': return ay; break;
+    case 'z': return az; break;
+    case 'X': return accelX; break;
+    case 'Y': return accelY; break;
+    case 'Z': return accelZ; break;
+  }
+}
+
+int getGyro(char axis)
+{
+  switch(axis) {
+    case 'x': return gx; break;
+    case 'y': return gy; break;
+    case 'z': return gz; break;
+    case 'X': return gyroX; break;
+    case 'Y': return gyroY; break;
+    case 'Z': return gyroZ; break;
+  }
+}
+
+void wake() 
+{
+  // Clear sleep mode bit (6), enable all sensors
+  writeByte(MPU9250_ADDRESS, PWR_MGMT_1, 0x00);
+  delay(10); // Wait for all registers to reset
+  sleeping = false;;
+}
+
+void sleep()
+{
+  writeByte(MPU9250_ADDRESS, PWR_MGMT_1, 0x40);
+  delay(10); // Wait for all registers to reset 
+  sleeping = true;
+}
+
+
+
+
+
+
+
+
 
 /*********
  * MPU9250 necessities
