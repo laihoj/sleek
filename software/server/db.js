@@ -54,8 +54,9 @@ exports.getDevicesByUser = async function(user) {
 // 	return Device.find({device_address: device_address}).exec();
 // }
 
-exports.saveDevice = async function(device_address, device_uuid, device_name, device_user) {
+exports.saveDevice = async function(device_label, device_address, device_uuid, device_name, device_user) {
 	var device = new Device({
+		label: device_label,
 		address: device_address,
 		uuid: device_uuid,
 		name: device_name,

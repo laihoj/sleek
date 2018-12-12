@@ -90,6 +90,7 @@ app.get("/api/devices/address/:address", async function(req,res) {
 
 app.post("/api/devices", async function(req,res) {
 	let device = await db.saveDevice(
+		req.body.device_label, 
 		req.body.device_address, 
 		req.body.device_UUID, 
 		req.body.device_name, 
