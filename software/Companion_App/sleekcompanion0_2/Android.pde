@@ -11,20 +11,20 @@ KetaiBluetooth bt;
 String info = "";
 KetaiList klist;
 
+//issue with parallelism. Fix: First come, first served.
+boolean handlingBTDataEvent = false;
+
 void onBluetoothDataEvent(String who, byte[] data) {
-  
-  String result = "";
-  for(int i = 0; i < data.length; i++) {
-    result += (char)data[i];
+  if(!handlingBTDataEvent) {
+    handlingBTDataEvent = true;
+    String result = "";
+    for(int i = 0; i < data.length; i++) {
+      result += (char)data[i];
+    }
+    println(who + " " + result);
+    new Thread(new NewDataPoint(who, ""+ System.currentTimeMillis(), result)).start();
+    handlingBTDataEvent = false;
   }
-  
-  println(who + " " + result);
-  
-  new NewDataPoint(who, ""+ System.currentTimeMillis(), result).queue();
-  //SensorNode sensor = nodes.getByName(who);
-  //if(data.length >= 4) {
-  //  sensor.updateState((char)data[1],(char)data[2],(char)data[3]);
-  //}
 }
 
 
