@@ -74,6 +74,7 @@ int userDelay = 0; //delay in ms
 boolean sleeping = true; //not in use?
 
 
+
 /*----------------------------------------------------------
  * Setup
 ------------------------------------------------------------*/
@@ -247,9 +248,7 @@ void loop() {
   switch(outputMode)
   {
     case 0: break; //request based output
-    case 1: Serial.print("!," + (String) getRoll() + 
-                          ',' + (String) getPitch() + 
-                          ',' + (String) getYaw() + ",$"); 
+    case 1: Serial.print("!" + (String) getRoll() + (String) getPitch() + (String) getYaw() + '$');
       break;
     case 2: Serial.print("!," + (String) getAccel('x') + ',' + (String) getAccel('y') + ',' + (String) getAccel('z') + ",$"); 
       break;
@@ -272,7 +271,8 @@ void loop() {
   
   response = ""; //set output to empty string
   if (Serial.available() > 0) {
-    
+    boolean validInput = true;
+    boolean terminalReached = false;
     char incomingByte = 0;
     incomingByte = Serial.read(); // read the incoming byte:
 
@@ -280,16 +280,15 @@ void loop() {
     //using 'continue' instead of 'break' if terminal symbol reached
     if(incomingByte == 33) //'!' is starting symbol
     {
-      response += '!';
-      response += ','; // dealing with comma separated values is nicer
-      while (Serial.available() > 0) {
+      
+      while (Serial.available() > 0  && validInput && !terminalReached) {
         incomingByte = Serial.read();
         switch(incomingByte) {
-          case 'r': response += (String) getRoll() + ',';
+          case 'r': response += (String) getRoll();
             break;
-          case 'p': response += (String) getPitch() + ',';
+          case 'p': response += (String) getPitch();
             break;
-          case 'y': response += (String) getYaw() + ',';
+          case 'y': response += (String) getYaw();
             break;
           case 'a': response += (String) getAccel('x') + ',';
                     response += (String) getAccel('y') + ',';
@@ -315,40 +314,60 @@ void loop() {
                     response += (String) getMag('Y') + ',';
                     response += (String) getMag('Z') + ',';
             break;
-          case '$': Serial.print(response + '$');
+          case '$': terminalReached = true;
             continue;
-          default: Serial.print("&Syntax error$");
-            continue;
+          default: 
+            validInput = false;
+          continue;
         }
       }
+      if(validInput && terminalReached) {
+        Serial.print('!' + response + '$');
+        response = "";
+      }
+      Serial.flush();
     } 
     else if(incomingByte == 63) //'?' is starting symbol
     {
       while (Serial.available() > 0) {
         incomingByte = Serial.read();
         switch(incomingByte) {
-          case 's': sleep(); Serial.print("#sleeping:1$");
-            continue;
-          case 'w': wake(); Serial.print("#sleeping:0$");
-            continue;
-          case 'o': Serial.print("#ok$");
-            continue;
+          case 's': 
+            sleep(); 
+            response = "sleeping:1";
+            break;
+          case 'w': 
+            wake(); 
+            response = "sleeping:0";
+            break;
+          case 'o': 
+            response = "ok";
+            break;
           case 'm': outputRangeMax = Serial.parseInt();
-            Serial.print("#outputRangeMax:" + (String)outputRangeMax + "$");
-            continue;
+            response = "outputRangeMax:" + (String)outputRangeMax;
+            break;
           case 'n': outputRangeMin = Serial.parseInt();
-            Serial.print("#outputRangeMin:" + (String)outputRangeMin + "$");
-            continue;
+            response = "outputRangeMin:" + (String)outputRangeMin;
+            break;
           case 'd': userDelay = Serial.parseInt();
-            Serial.print("#userDelay:" + (String)userDelay + "$");
-            continue;
+            response = "userDelay:" + (String)userDelay;
+            break;
           case 'p': outputMode = Serial.parseInt();
-            Serial.print("#outputMode:" + (String)outputMode + "$");
+            response = "outputMode:" + (String)outputMode;
+            break;
+          default: 
+            validInput = false;
             continue;
-          default: Serial.print("&Syntax error$");
+          case '$': terminalReached = true;
             continue;
         }
       }
+
+      if(validInput && terminalReached) {
+        Serial.print('#' + response + '$');
+        response = "";
+      }
+      Serial.flush();
     }
   }
   
@@ -382,6 +401,9 @@ void loop() {
 /************************************************************
  * Utilities
 *************************************************************/
+
+
+
 int getRoll()
 {
   return map(roll,-90,90,outputRangeMin,outputRangeMax);   //calibration experimental
