@@ -12,9 +12,18 @@ const Datapoint = require("./models/datapoint");
 const Gesture = require("./models/gesture");
 
 
-exports.datapoints = async function() {
-	return Datapoint.find({}).exec();
+exports.datapoints = async function(latest_N) {
+	if(arguments.length == 0) {
+		return Datapoint.find({}).exec();
+	}
+	//not used anywhere?
+	if(arguments.length == 1) {
+		return Datapoint.find({})
+						.skip(db.collection.count() - N)
+						.exec();
+	}
 }
+
 
 exports.datapointsInTimeSpan = async function(start, end) {
 	return Datapoint.find({

@@ -1,0 +1,25 @@
+<table id="datapointsTable" class="u-full-width">
+	<thead>
+		<tr>
+			<th onclick="sortTable('datapointsTable',0);">device_address</th>
+			<th onclick="sortTable('datapointsTable',1);">data</th>
+			<th onclick="sortTable('datapointsTable',2,'true');">milliseconds</th>
+		</tr>
+	</thead>
+	<tbody>
+		<% if(typeof datapoints !== 'undefined') { %>
+	 		<% for(var i = 0; i < datapoints.length; i++) { %>
+	  			<tr>
+
+	  				<% if(typeof datapoints[i] !== 'undefined') { %>
+						<td><%= datapoints[i].device_address %></td>
+						<td><%= datapoints[i].data %></td>
+						<% if(typeof datapoints[i].timestamp !== 'undefined') { %>
+							<td><%= datapoints[i].timestamp.getTime() %></td>
+						<% } %>
+					<% } %>
+				</tr>
+			<% } %>
+		<% } %>
+	</tbody>
+</table>

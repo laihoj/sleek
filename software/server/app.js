@@ -136,6 +136,45 @@ app.get("/api", function(req, res) {
 	res.render("api");
 });
 
+//makes different query per supplied query parameters
+app.get("/datapoints", async function(req, res) {
+	let datapoints;
+	if(req.query.start && req.query.end) {
+		datapoints = await db.datapointsInTimeSpan(req.query.start, req.query.end);
+	} else if(req.query.start) {
+		datapoints = await db.datapointsInTimeSpan(req.query.start, Date.now());
+	} else if(req.query.end) {
+		datapoints = await db.datapointsInTimeSpan(0, req.query.end);
+	}
+	res.render("datapoints", {datapoints: datapoints});
+});
+
+//recent means in the latest 15 seconds
+app.get("/datapoints/recent", async function(req, res) {
+	const now = Date.now();	//TODO: consider time zone stuff
+	let firstDatapoint;
+	let lastDatapoint;
+	let datapoints = await db.datapointsInTimeSpan(now - 15 * 1000, now);
+	if(datapoints.length > 0) {
+		firstDatapoint = datapoints[0].timestamp.getTime();
+		lastDatapoint = datapoints[datapoints.length - 1].timestamp.getTime();
+	}
+	res.render("datapointsrecent", {datapoints: datapoints, start_timestamp:firstDatapoint, end_timestamp:lastDatapoint});
+});
+
+// app.get("/datapoints/recent", async function(req, res) {
+// 	res.redirect("/datapoints/recent/seconds/15")
+// });
+// app.get("/datapoints/recent/seconds/:seconds", async function(req, res) {
+// 	const now = Date.now();	//TODO: consider time zone stuff
+// 	const seconds = req.params.seconds;
+// 	let datapoints;
+// 	if(seconds) {
+// 		datapoints = await db.datapoints(now - seconds * 60, now); 
+// 	}
+// 	res.render("datapointsrecent", {datapoints: datapoints});
+// });
+
 app.get("/devices", function(req,res) {
 	res.render("devices");
 });

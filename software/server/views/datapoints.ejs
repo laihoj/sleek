@@ -1,0 +1,17 @@
+<% include ./partials/header %>
+
+<form action="/datapoints" method="get">
+	<label for="start">Start time</label>
+	<input type="datetime" step=".001" name="start" value="2018-12-14T11:15:54.430Z" placeholder="yyyy-mm-ddThh:mm:ss.mmmZ">
+	<!-- the Z in millisecond is necessary for mongoose time comparison but breaks prefilling form when using datetime-local -->
+	<br>
+	<label for="end">End time</label>
+	<input type="datetime" step=".001" name="end" value="2018-12-14T11:20:54.430Z" placeholder="yyyy-mm-ddThh:mm:ss.mmmZ">
+	<br>
+	<input type="submit">
+</form>
+<% include ./partials/datapointtable %>
+
+
+
+<% include ./partials/footer %>

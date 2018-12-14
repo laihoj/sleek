@@ -1,9 +1,19 @@
 <h1>new gesture</h1>
 <form action="/api/gestures" method="post">
 	Gesture start time:<br>
-		<input type="text" name="start_timestamp" placeholder="yyyy-mm-ddThh:mm:ss.mmmZ"><br>
+	
+		<% if(typeof(start_timestamp) !== 'undefined') { %>
+			<input type="text" name="start_timestamp" placeholder="yyyy-mm-ddThh:mm:ss.mmmZ" value="<%= start_timestamp %>"><br>
+		<% } else { %>
+			<input type="text" name="start_timestamp" placeholder="yyyy-mm-ddThh:mm:ss.mmmZ"><br>
+		<% } %>
 	Gesture end time:<br>
-  		<input type="text" name="end_timestamp" placeholder="yyyy-mm-ddThh:mm:ss.mmmZ"><br>
+		<% if(typeof(end_timestamp) !== 'undefined') { %>
+			<input type="text" name="end_timestamp" placeholder="yyyy-mm-ddThh:mm:ss.mmmZ" value="<%= end_timestamp %>"><br>
+		<% } else { %>
+			<input type="text" name="end_timestamp" placeholder="yyyy-mm-ddThh:mm:ss.mmmZ"><br>
+		<% } %>
+  			
 	Gesture label:<br>
   		<input type="text" name="label" placeholder="e.g. /'hello/'"><br>
 	Gesture owner (user):<br>
