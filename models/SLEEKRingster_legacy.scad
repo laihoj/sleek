@@ -1,4 +1,4 @@
-detail = 120; // decrease to speed up rendering
+detail = 30; // decrease to speed up rendering
 
 //parameters to make nice side-aligned ringster
 //chip_x = 22;
@@ -28,16 +28,13 @@ ring_curvature = chip_x / 2;
 finger_diameter = 18;
 
 
+ringster();
 
-difference() {
-    ringster();
-    translate([0,0, 20])cube([5,50,10], true);
-}
 
 module ringster()
 {
     
-    rotate([180, 0, 0]) //rotate upside down for printing
+//    rotate([180, 0, 0]) //rotate upside down for printing
     translate([0, 0, - chip_z / 2]) //place on floor
     union()
     {

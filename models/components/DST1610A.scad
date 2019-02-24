@@ -4,6 +4,7 @@ DST1610A_x = 1;
 DST1610A_y = 1.6;
 DST1610A_z = 0.45;
 
+//DST1610A();
 
 module DST1610A(x, y, z, centering) {
     translate([x, y, z])

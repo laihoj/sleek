@@ -1,3 +1,18 @@
+include <components/BC832.scad>
+include <components/K3-2235S-K1.scad>
+include <components/microUSB.scad>
+include <components/mpu9250.scad>
+include <components/3_3V_Regulator.scad>
+include <components/TP4056.scad>
+include <components/female_header.scad>
+include <components/SMD_Components.scad>
+include <components/ADP150.scad>
+include <components/DST1610A.scad>
+include <components/ADAFRUIT_LIPO_BATTERIES.scad>
+include <SLEEK_Power_Module.scad>
+include <SLEEK_BT_Module.scad>
+
+ROUNDING = true;
 detail = 120; // decrease to speed up rendering
 
 //parameters to make nice side-aligned ringster
@@ -25,21 +40,128 @@ ring_width = 6;
 ring_height = chip_x;
 ring_position = 8; //chip_x = 22, width = 6: min = 8, max = 33
 ring_curvature = chip_x / 2;
-finger_diameter = 20;
+finger_diameter = 18;
 
+/*
+translate([0,0,20])
+spade(chip_x, chip_y, chip_z, top_plate_front_curvature);
+*/
 
+rotate([270,0,270])
+translate([20 - 55, -chip_y/2, 45 - 10])
 ringster();
 
 
+translate([45, 35, battery_100mAh_y/2 - 1])
+rotate([270, 0, 90])
+battery_100mAh(-battery_100mAh_x / 2, -battery_100mAh_y / 2 - 1, 0);
+
+translate([68 - 15, 35, battery_150mAh_y/2 - 1])
+rotate([270, 0, 90])
+battery_150mAh(-battery_150mAh_x / 2, -battery_150mAh_y / 2 - 1, 0);
+
+rotate([0,180,0])
+battery_cover(-22, 0, -battery_100mAh_z * 2 + 1);
+
+//SLEEK_HW_Cover(0,0,0);
+rotate([0,180,0])
+SLEEK_HW_Cover(-46, 0, -battery_100mAh_z * 2 + 1);
+
+SLEEK_HW(68, 0, 0);
+
+
+    
+module SLEEK_HW_Cover(x, y, z) {
+//    translate([x, y, z])
+//        import("renders/SLEEK_HW_Cover.stl");
+    
+    
+    variance = 0.7;
+    translate([x, y, z])
+    difference() {
+        translate([0,0,0])
+            battery_cover();
+        translate([0,0,0.5]) {
+            SLEEK_HW();
+    
+/*
+//            translate([variance,0,0])
+//                SLEEK_HW();
+
+            translate([variance,variance,0])
+                SLEEK_HW();
+
+            translate([-variance,-variance,0])
+                SLEEK_HW();
+
+            translate([variance,-variance,0])
+                SLEEK_HW();
+                                                                
+            translate([-variance,variance,0])
+                SLEEK_HW();
+
+            translate([0,variance,0])
+                SLEEK_HW();
+            translate([-variance,0,0])
+                SLEEK_HW();
+
+            translate([0,-variance,0])
+                SLEEK_HW();
+
+
+                */
+                
+        }
+    }
+    
+}
+
+module SLEEK_HW(x, y, z) {
+    translate([x, y, z]) {
+        rotate([0,0,180])
+//            translate([-chip_x / 2 + 2, -16, 0])
+//            import("renders/SLEEK_Power_Module.stl");
+            SLEEK_Power_Module(-chip_x / 2 + 2, -16, 0);
+
+        rotate([0,0,180])
+        //translate([-chip_x / 2 + 2, -1, 0])
+        //import("renders/SLEEK_BT_Module.stl");
+            SLEEK_BT_Module(-chip_x / 2 + 2, -1, 0);
+    }
+}
+
+module battery_cover(x, y, z) {
+    translate([x, y, z]) {
+    translate([ - chip_x / 2, - chip_y / 2, 0])
+        cube([1,chip_y,battery_100mAh_z + 1]);
+    translate([chip_x / 2 - 1, - chip_y / 2, 0])
+        cube([1,chip_y,battery_100mAh_z + 1]);
+    translate([ - chip_x / 2, - chip_y / 2, 0])
+        cube([chip_x,1,battery_100mAh_z + 1]);
+    
+    translate([0, 0, battery_100mAh_z + chip_z/2 + 1])
+    rotate([180, 0, 180])
+        top_plate();
+    /*
+        translate([-chip_x/2, -chip_y/2, -chip_z/2 + 1])
+        cube([chip_x, chip_y, 1]);
+    */
+    }
+}
+
 module ringster()
 {
-    
     rotate([180, 0, 0]) //rotate upside down for printing
-    translate([0, 0, - chip_z / 2]) //place on floor
-    union()
-    {
-        top_plate();
-        ring();
+    difference() {
+        rotate([180, 0, 0]) //rotate upside down for printing
+        translate([0, 0, - chip_z / 2]) //place on floor
+            union()
+            {
+                top_plate();
+                ring();
+            }
+        rotate([180, 0, 0]) //rotate up
+        translate([0,0, -20])cube([5,50,10], true);
     }
 }
 
@@ -51,7 +173,7 @@ module ring()
         ring_element();     //base block
         ring_cutout();      //minus the ring base
         ring_hole_cutout(); //minus the finger hole
-        ring_incision();    //minus dent in ring
+//        ring_incision();    //minus dent in ring
     }
 }
 
@@ -161,6 +283,12 @@ module spade(x, y, z, rounding)
                     translate([x / 2, y - rounding, min(rounding, z)])
                     rotate([0,90,0])
                     cylinder(x, rounding, rounding, true, $fn=detail);
+
+                }
+                if(!ROUNDING) {
+                    translate([x, y - rounding, min(rounding, z)])
+                    rotate([0,90,90])
+                    cube([z - rounding, x, rounding]);
                 }
                 translate([0, y - min(rounding, z), min(rounding, z)])
                 cube([x, min(rounding, z), z - min(rounding, z)], false);

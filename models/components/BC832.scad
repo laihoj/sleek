@@ -3,7 +3,7 @@ BC832_x = 7.8;
 BC832_y = 8.8;
 BC832_z = 1.5;
 
-//BC832(10,0,0);
+//BC832(0,0,0);
 
 module BC832(x, y, z, centering) {
     translate([x, y, z])

@@ -9,7 +9,7 @@ reg_pin_z = 0.1;
 reg_pin_spacing = 0.8;
 reg_pin_offset = (reg_y - 3 * reg_pin_y) / 4;
 
-//3_3V_Regulator(1,2);
+//3_3V_Regulator();
 
 module 3_3V_Regulator(x, y, z, centering) {
     translate([x, y, z]) {

@@ -10,10 +10,7 @@ TP4056_pin_z = 0.2;
 TP4056_pin_spacing = 1.27;
 TP4056_pin_offset = 0.4;
 
-//TP4056(1,2);
-
-
-
+//TP4056();
 
 module TP4056(x, y, z, centering) {
     translate([x, y, z]) {

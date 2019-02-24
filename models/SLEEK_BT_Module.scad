@@ -9,14 +9,23 @@ include <components/SMD_Components.scad>
 include <components/ADP150.scad>
 include <components/DST1610A.scad>
 
-SLEEK_Module_PCB_x = 18.0;
-SLEEK_Module_PCB_y = 15.5;
-SLEEK_Module_PCB_z = 0.6;
+SLEEK_BT_Module_x = 18.0;
+SLEEK_BT_Module_y = 15.5;
+SLEEK_BT_Module_z = 0.6;
 
+//SLEEK_BT_Module();
+
+module SLEEK_BT_Module(x, y, z, centering) {
+    translate([x, y, z])
+    SLEEK_BT_Module_components();
+}
+
+module SLEEK_BT_Module_components() {
+    
 difference() {
     union() {
         PCB();
-        translate([0,0,SLEEK_Module_PCB_z]) {
+        translate([0,0,SLEEK_BT_Module_z]) {
             BC832(0,3,0);
             mpu9250(9,7,0);
             rotate([0,0,270])
@@ -26,11 +35,9 @@ difference() {
     rotate([0,0,270])
     female_header_7(-hole_spacing, 0, 0);
 }
-
-
-
+}
 
 
 module PCB() {
-    cube([SLEEK_Module_PCB_x, SLEEK_Module_PCB_y, SLEEK_Module_PCB_z]);
+    cube([SLEEK_BT_Module_x, SLEEK_BT_Module_y, SLEEK_BT_Module_z]);
 }
