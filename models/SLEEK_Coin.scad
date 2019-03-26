@@ -13,15 +13,21 @@ include <components/Coin_Cell_1220.scad>
 
 detail = 100;
 
-SLEEK_Coin_PCB_x = 18;
-SLEEK_Coin_PCB_y = 13;
+SLEEK_Coin_PCB_x = 18.1;
+SLEEK_Coin_PCB_y = 13.1;
 SLEEK_Coin_PCB_z = 0.6;
 
-translate([0,0,5])
+translate([0,0,6])
 difference() {
-SLEEK_Capsule(5, 0);
-translate([1,1,-0.5])   //extra depth added, just in case
-SLEEK_Coin();
+    SLEEK_Capsule(6, 0);
+    translate([1,1,-0.5])   //extra depth added, just in case
+    SLEEK_Coin();
+    translate([1,5.5,3])   //extra depth added, just in case
+    translate([SLEEK_Coin_PCB_x / 2, SLEEK_Coin_PCB_y / 2, - SLEEK_Coin_PCB_z * 2 - Coin_Cell_1220_height])
+    cube([Coin_Cell_1220_diameter, Coin_Cell_1220_diameter, 6], true);
+    translate([1,-5.5,3])   //extra depth added, just in case
+    translate([SLEEK_Coin_PCB_x / 2, SLEEK_Coin_PCB_y / 2, - SLEEK_Coin_PCB_z * 2 - Coin_Cell_1220_height])
+    cube([Coin_Cell_1220_radius, Coin_Cell_1220_diameter, 6], true);
 }
 
 translate([0,0,3])
@@ -53,10 +59,10 @@ module rounded_box(z,rounding) {
     translate([-0.5,1.5,-z]) 
     intersection() {
         union() {
-            spade(18.5,12.5,z,rounding);
+            spade(SLEEK_Coin_PCB_x + 0.5,12.5,z,rounding);
             rotate([0,0,180])
             translate([-SLEEK_Coin_PCB_x-3,-12,0])
-            spade(18.5,12.5,z,rounding);
+            spade(SLEEK_Coin_PCB_x + 0.5,12.5,z,rounding);
         }
         union() {
             rotate([0,0,90])
