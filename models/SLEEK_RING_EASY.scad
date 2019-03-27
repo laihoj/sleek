@@ -3,8 +3,7 @@ detail = 120;
 
 
 //sleek_ring_easy(finger_diameter, ring_thickness, lid_thickness, top_x, top_z)
-//sleek_ring_easy(18, 1, 1, 20, 15);
-sleek_ring_easy(18, 1, 1, 20, 15);
+sleek_ring_easy(18.5, 1, 1, 15, 20);
 
 module triangle(x, y, height) {
     a = max(x, y, height);
