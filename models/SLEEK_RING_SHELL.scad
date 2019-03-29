@@ -6,7 +6,7 @@
 
 
 //Deciding between testing and producing? change these
-detail = 120;    //increase for higher quality. 120 is pretty nice
+detail = 40;    //increase for higher quality. 120 is pretty nice
 TESTING = false; //false: 3D-printable. true: inspect simulation
 
 /************************
@@ -18,10 +18,10 @@ TESTING = false; //false: 3D-printable. true: inspect simulation
 pcb_x = 13;                //Ask a PCB designer to define this
 pcb_y = 18;                //Ask a PCB designer to define this
 pcb_z = 0.6;               //Ask a PCB designer to define this
-finger_circumference = 52; //Ask a customer to define this.
-ring_height = 8;           //Ask a designer
-cover_height = 2;          //Ask a designer //at max cavity value
-delta = 0.6;               //Ask the manufacturer this. Minimum manufacturable size
+finger_circumference = 52; //Ask a customer to measure this.
+ring_height = 8;           //Ask a designer to decide this
+cover_height = 0.5;          //Ask a designer to decide this
+delta = 0.5;               //Ask the manufacturer this. Minimum manufacturable size
 
 
 /*--------------------- 
@@ -39,7 +39,7 @@ a = 2 * atan(Dao / b);  //optimal angle between PCBs to just fit
 C = sqrt(1/4 * (b * b + Df * Df)) - Df/2 + z * sin(a); //cavity size between shells necessary to fit PCBs
 Dbi = Dao + 2*C;        //diameter of shell b, inner
 Dbo = Dbi + 2*delta;    //diameter of shell b, outer
-cover_height_effective = min(cover_height, C);  //cover may be at most as sizeable as the cavity
+cover_height_effective = max(min(cover_height, C), delta);  //cover may be at most as sizeable as the cavity, and at minimum the smallest productible size
 
 
 
@@ -118,7 +118,7 @@ module cover(x, y, z) {
             //top half of cylinder
             rotate([270, 0, 0])
             translate([0,0,+cover_height_effective/2])
-            cylinder(h=cover_height/2, d=Dbo, $fn=detail);
+            cylinder(h=cover_height_effective/2, d=Dbo, $fn=detail);
             //rouded outer edge
             rotate([90,0,0])
             translate([0,0,-cover_height_effective/2])
