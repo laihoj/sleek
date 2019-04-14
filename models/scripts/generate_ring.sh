@@ -9,7 +9,7 @@ do
 for finger_circumference in 45 48 51 54 57 60 63
 #for finger_circumference in 45
 do
-for segment_angle in 80
+for segment_angle in 60
 do
 
 finger_radius=0
