@@ -19,9 +19,16 @@
  communicate at 9600 bps (from 115200), and passes any serial
  data between Serial Monitor and bluetooth module.
  */
+#include <inttypes.h>
 
-#include "mpu9250.c"
+#include "mpu9250.h"
 #include <Wire.h> //I2C library
+
+
+#define DEBUG 0
+
+
+
 
 /************************************************************
  * MPU9250 data storage
@@ -33,19 +40,22 @@ byte gyroData[6];
 byte magnetoData[6];
 
 //Raw readings
-float accelX,accelY,accelZ;
-float gyroX,gyroY,gyroZ;
-float magnetoX,magnetoY,magnetoZ;
+int16_t accelX,accelY,accelZ;
+int16_t gyroX,gyroY,gyroZ;
+int16_t magnetoX,magnetoY,magnetoZ;
 
 //Resolution-adjusted
-float gx, gy, gz; //unit: ???
-float ax, ay, az; //unit: m/s^2
-float mx, my, mz; //unit: ???
+int16_t ax, ay, az; //unit: m/s^2
+int16_t gx, gy, gz; //unit: ???
+int16_t mx, my, mz; //unit: ???
+
 
 //Converted readings
-signed int roll = 0;
-signed int pitch = 0;
-signed int yaw = 0;
+int16_t roll = 0;
+int16_t pitch = 0;
+int16_t yaw = 0;
+
+//double timestamp;
 
 //Output
 String response;
@@ -66,22 +76,59 @@ String response;
 int outputRangeMin = 0; //mapping
 int outputRangeMax = 9;
 int outputMode = 0;
-int userDelay = 0; //delay in ms
+int userDelay = 35; //delay in ms//currently makes sampling rate approx 20Hz
 
 /************************************************************
  * Flags
 *************************************************************/
-boolean sleeping = true; //not in use?
+char sleeping = 1; //not in use?
+
+char * cx = (char*)malloc(sizeof(char)*2);
+char * cy = (char*)malloc(sizeof(char)*2);
+char * cz = (char*)malloc(sizeof(char)*2);
+char * ca = (char*)malloc(sizeof(char)*2);
+char * cg = (char*)malloc(sizeof(char)*2);
+char * cm = (char*)malloc(sizeof(char)*2);
 
 
+char caxarray[5];
+char cayarray[5];
+char cazarray[5];
+char cgxarray[6];
+char cgyarray[6];
+char cgzarray[6];
 
+char *cax = &caxarray[0];
+char *cay = &cayarray[0];
+char *caz = &cazarray[0];
+char *cgx = &cgxarray[0];
+char *cgy = &cgyarray[0];
+char *cgz = &cgzarray[0];
+  
+/*----------------------------------------------------------
+ * Structures
+------------------------------------------------------------*/
+
+struct Main_memory {
+  byte arraylength = 7;
+  byte next = 0;
+  byte datalength = 70;
+  char dataJSON[7][70];
+};
+
+Main_memory main_memory;
+  
 /*----------------------------------------------------------
  * Setup
 ------------------------------------------------------------*/
 
 void setup() {
-
-  
+  strcpy(cx, "x\0");
+  strcpy(cy, "y\0");
+  strcpy(cz, "z\0");
+  strcpy(ca, "a\0");
+  strcpy(cg, "g\0");
+  strcpy(cm, "m\0");
   /*********
    * LED to tell powered
   ***********/
@@ -121,114 +168,59 @@ void setup() {
 ------------------------------------------------------------*/
 
 void loop() {
-  /*********
-   * Read MPU9250 - WARNING - MONOLITH
-  ***********/
-
-
-  /*********
-   * READ ACCELEROMETER
-  ***********/
-  Wire.beginTransmission(SENSOR_I2CADD); //Begin transmission to slave address
-  Wire.write(ACCEL_XOUT_H); //Register address within the sensor where the data is to be read from
-  Wire.endTransmission();
-  Wire.requestFrom(SENSOR_I2CADD, 6); //Get 6 bytes from the register address 
-  int i = 0;
-  while(Wire.available()) //If the buffer has data
-  {
-    accelData[i] = Wire.read(); //Save the data to a variable
-    i++;
-  }
-  accelX = accelData[1] | (int)accelData[0] << 8;
-  accelY = accelData[3] | (int)accelData[2] << 8;
-  accelZ = accelData[5] | (int)accelData[4] << 8;
-
-
-
-  /*********
-   * READ TEMPERATURE
-  ***********/
-  Wire.beginTransmission(SENSOR_I2CADD); //Begin transmission to slave address
-  Wire.write(TEMP_OUT_H); //Register address within the sensor where the data is to be read from
-  Wire.endTransmission();
-  Wire.requestFrom(SENSOR_I2CADD, 2); //Get 2 bytes from the register address 
-  i = 0;
-  while(Wire.available()) //If the buffer has data
-  {
-    tempData[i] = Wire.read(); //Save the data to a variable
-    i++;
-  }
-  int temp = tempData[1] | (int)tempData[0] << 8;
-
-
-
-  /*********
-   * READ GYRO
-  ***********/
-  Wire.beginTransmission(MPU9250_ADDRESS); //Begin transmission to slave address
-  Wire.write(GYRO_XOUT_H); //Register address within the sensor where the data is to be read from
-  Wire.endTransmission();
-  Wire.requestFrom(SENSOR_I2CADD, 6); //Get 6 bytes from the register address 
-  i = 0;
-  while(Wire.available()) //If the buffer has data
-  {
-    gyroData[i] = Wire.read(); //Save the data to a variable
-    i++;
-  }
-  gyroX = gyroData[1] | (int)gyroData[0] << 8;
-  gyroY = gyroData[3] | (int)gyroData[2] << 8;
-  gyroZ = gyroData[5] | (int)gyroData[4] << 8;
-
-
-
-
-  /*********
-   * READ MAGNETOMETER
-  ***********/
-  //turning magnetometer off and on is a workaround that makes output value update
-  writeByte(AK8963_ADDRESS, AK8963_CNTL, 0x00); // Power down magnetometer
-  delay(10);
-  writeByte(AK8963_ADDRESS, AK8963_CNTL, 0x16);
-  delay(10);
-  Wire.beginTransmission(AK8963_ADDRESS);
-  Wire.write(AK8963_XOUT_L);
-  Wire.endTransmission();
   
-  byte rawData[6];
-  i = 0;
-  // Read bytes from slave register address
-  Wire.requestFrom(AK8963_ADDRESS, 6);
-  while (Wire.available())
-  {
-    // Put read results in the Rx buffer
-    rawData[i++] = Wire.read();
+  readAcceleration();
+  
+  uint32_t timestamp = millis();
+
+  //generate sample
+  char* accelerationData = convertAccelerationToJSON(timestamp);
+
+  //publish sample
+  char buffer[200];
+  sprintf(buffer, "%s\n", accelerationData);    
+  Serial.print(buffer);
+
+  uint16_t err = 0;
+  err = copyDataToMemory(accelerationData);
+  if (DEBUG) {
+    if (err == -1) {
+      Serial.println("storing to memory failed");
+    }
+    if (err >= 0) {
+      Serial.println("Data stored at "+(String) err+". Next data goes to " + main_memory.next);
+    }
   }
 
-  magnetoX = ((int16_t)rawData[1] << 8) | rawData[0];
-  magnetoY = ((int16_t)rawData[3] << 8) | rawData[2];
-  magnetoZ = ((int16_t)rawData[5] << 8) | rawData[4];
+  free(accelerationData);
 
 
+  readGyroscope();
+  timestamp = millis();
 
-
-
+  char* gyroData = convertGyroscopeToJSON(timestamp);
   
-  /****
-   * Readings readings adjusted by calibration
-   * TODO: make resolution adjustable
-  ******/
-  gx = gyroX * 2000.0 / 32768.0f;
-  gy = gyroY * 2000.0 / 32768.0f;
-  gz = gyroZ * 2000.0 / 32768.0f;
-  ax = accelX * 16.0f / 32768.0f;
-  ay = accelY * 16.0f / 32768.0f;
-  az = accelZ * 16.0f / 32768.0f;
-  mx = magnetoX * 10.0f * 4912.0f / 32760.0f;
-  my = magnetoY * 10.0f * 4912.0f / 32760.0f;
-  mz = magnetoZ * 10.0f * 4912.0f / 32760.0f;
+  //publish sample
+  buffer[200];
+  sprintf(buffer, "%s\n", gyroData);    
+  Serial.print(buffer);
   
+  err = copyDataToMemory(gyroData);
+  if (DEBUG) {
+    if (err == -1) {
+      Serial.println("storing to memory failed");
+    }
+    if (err >= 0) {
+      Serial.println("Data stored at "+(String) err+". Next data goes to " + main_memory.next);
+    }
+  }
+  
+  free(gyroData);
 
 
+  readMagnetometer();
+  
+  readTemp();
   /****
    * Output prepared
   ******/
@@ -314,6 +306,8 @@ void loop() {
                     response += (String) getMag('Y') + ',';
                     response += (String) getMag('Z') + ',';
             break;
+          case 'b': response += broadcastNewStuffInMemory();
+            break;
           case '$': terminalReached = true;
             continue;
           default: 
@@ -398,6 +392,272 @@ void loop() {
   */
 
 
+
+
+/*********
+ * API
+***********/
+
+
+  char * 
+  broadcastNewStuffInMemory() 
+  {
+    uint16_t i;
+    for (i = 0; i < main_memory.arraylength - 1; i++) {
+      Serial.println(main_memory.dataJSON[i]);
+    }
+  }
+
+
+char 
+  copyDataToMemory(char* dataa) 
+  {
+    uint16_t i;
+    uint16_t current = main_memory.next;
+//    for(i = 0; i < main_memory.datalength; i++)
+//    {
+//      main_memory.dataJSON[current][i] = '0';
+//    }
+    i = 0;
+    while(*dataa) {
+      main_memory.dataJSON[current][i] = *dataa;
+      dataa++;
+      i++;
+    }
+    main_memory.dataJSON[current][i] = '\0';
+    main_memory.next = (current + 1) % main_memory.arraylength;
+    return current; //now its actually previous rather than current
+    }
+
+ void readAcceleration() {
+  Wire.beginTransmission(SENSOR_I2CADD); //Begin transmission to slave address
+  Wire.write(ACCEL_XOUT_H); //Register address within the sensor where the data is to be read from
+  Wire.endTransmission();
+  Wire.requestFrom(SENSOR_I2CADD, 6); //Get 6 bytes from the register address 
+  int i = 0;
+  while(Wire.available()) //If the buffer has data
+  {
+    accelData[i] = Wire.read(); //Save the data to a variable
+    i++;
+  }
+  accelX = (int16_t)accelData[0] << 8 | accelData[1];
+  accelY = (int16_t)accelData[2] << 8 | accelData[3];
+  accelZ = (int16_t)accelData[4] << 8 | accelData[5];
+
+  ax = accelX / 17; //nice approx for this resolution //scale goes from 0 to 981
+  ay = accelY / 17;
+  az = accelZ / 17;
+  
+ }
+
+  void readGyroscope() {
+    /*********
+   * READ GYRO
+  ***********/
+  Wire.beginTransmission(MPU9250_ADDRESS); //Begin transmission to slave address
+  Wire.write(GYRO_XOUT_H); //Register address within the sensor where the data is to be read from
+  Wire.endTransmission();
+  Wire.requestFrom(SENSOR_I2CADD, 6); //Get 6 bytes from the register address 
+  int i = 0;
+  while(Wire.available()) //If the buffer has data
+  {
+    gyroData[i] = Wire.read(); //Save the data to a variable
+    i++;
+  }
+  gyroX = (int16_t)gyroData[0] << 8| gyroData[1];
+  gyroY = (int16_t)gyroData[2] << 8| gyroData[3];
+  gyroZ = (int16_t)gyroData[4] << 8| gyroData[5];
+
+  gx = gyroX / 16; //nice approx
+  gy = gyroY / 16;
+  gz = gyroZ / 16;
+    }
+    
+  void readMagnetometer() {
+    
+
+  /*********
+   * READ MAGNETOMETER
+  ***********/
+  //turning magnetometer off and on is a workaround that makes output value update
+  writeByte(AK8963_ADDRESS, AK8963_CNTL, 0x00); // Power down magnetometer
+  delay(10);
+  writeByte(AK8963_ADDRESS, AK8963_CNTL, 0x16);
+  delay(10);
+  Wire.beginTransmission(AK8963_ADDRESS);
+  Wire.write(AK8963_XOUT_L);
+  Wire.endTransmission();
+  
+  byte rawData[6];
+  int i = 0;
+  // Read bytes from slave register address
+  Wire.requestFrom(AK8963_ADDRESS, 6);
+  while (Wire.available())
+  {
+    // Put read results in the Rx buffer
+    rawData[i++] = Wire.read();
+  }
+
+  magnetoX = ((int16_t)rawData[1] << 8) | rawData[0];
+  magnetoY = ((int16_t)rawData[3] << 8) | rawData[2];
+  magnetoZ = ((int16_t)rawData[5] << 8) | rawData[4];
+
+  mx = magnetoX * 3 / 2; //nice approx
+  my = magnetoY * 10.0f * 4912.0f / 32760.0f;
+  mz = magnetoZ * 10.0f * 4912.0f / 32760.0f;
+
+    }
+  void readTemp() {
+      /*********
+   * READ TEMPERATURE
+  ***********/
+  Wire.beginTransmission(SENSOR_I2CADD); //Begin transmission to slave address
+  Wire.write(TEMP_OUT_H); //Register address within the sensor where the data is to be read from
+  Wire.endTransmission();
+  Wire.requestFrom(SENSOR_I2CADD, 2); //Get 2 bytes from the register address 
+  int i = 0;
+  while(Wire.available()) //If the buffer has data
+  {
+    tempData[i] = Wire.read(); //Save the data to a variable
+    i++;
+  }
+  int temp = tempData[1] | (int)tempData[0] << 8;
+    }
+
+
+    
+
+/*********
+ * Shittest JSON library for arduino you will ever find
+***********/
+
+
+  char*
+  cnewJSONObject()
+  {
+    char *src = (char*)malloc(50*sizeof(char)); //hard-coded value is pulled from sleeve. maybe 3 is right number?
+    strcpy(src, "{}\0");
+    return src;
+  }
+
+
+  char* 
+  caddKeyValuePair(char* jsonObject, 
+                   char* pairname, 
+                   char* pairvalue)
+  {
+    uint16_t newsize = strlen(jsonObject) + strlen(pairname) + strlen(pairvalue) + 6 + 1;
+    jsonObject = (char*) realloc(jsonObject, newsize);
+    char* pcopy = jsonObject;
+    while(*jsonObject) {
+      jsonObject ++;
+    }
+    jsonObject --;
+    *jsonObject= '\0';
+    jsonObject = pcopy;
+    if (strlen(jsonObject) > 2) {  //if not the first entry, place comma
+      strcat(jsonObject, ",");
+    }
+    strcat(jsonObject, "\"");
+    strcat(jsonObject, pairname);
+    strcat(jsonObject, "\":\"");
+    strcat(jsonObject, pairvalue);
+    strcat(jsonObject, "\"}\0");
+    return jsonObject;
+  }
+
+  char* 
+  caddKeyObjectPair(char* jsonObject, 
+                   char* pairname, 
+                   char* pairobject)
+  {
+    uint16_t oldsize = strlen(jsonObject);
+    uint16_t namesize = strlen(pairname);
+    uint16_t objectsize = strlen(pairobject);
+    uint16_t newsize = oldsize + namesize + objectsize + 4 + 1;
+    jsonObject = (char*) realloc(jsonObject, newsize);
+    char* pcopy = jsonObject;
+    while(*jsonObject) {
+      jsonObject ++;
+    }
+    jsonObject --;
+    *jsonObject= '\0';
+    jsonObject = pcopy;
+    if (strlen(jsonObject) > 2) {  //if not the first entry, place comma
+      strcat(jsonObject, ",");
+    }
+    strcat(jsonObject, "\"");
+    strcat(jsonObject, pairname);
+    strcat(jsonObject, "\":");
+    strcat(jsonObject, pairobject);
+    strcat(jsonObject, "}\0");
+    return jsonObject;
+  }
+
+
+char*
+convertAccelerationToJSON(uint32_t timestamp)
+{
+  char* DatapointJSON = cnewJSONObject();
+  char* timestring = (char*)malloc(10*sizeof(char));
+  strcpy(timestring, "timestamp");
+  char ctimestamparray[20];
+  sprintf(ctimestamparray,"%lu",timestamp);
+  char *ctimestamp = &ctimestamparray[0];
+  DatapointJSON = caddKeyValuePair(DatapointJSON, timestring, ctimestamp);
+
+  sprintf(caxarray ,"%" PRId16, ax);
+  sprintf(cayarray ,"%" PRId16, ay);
+  sprintf(cazarray ,"%" PRId16, az);
+  
+  char* AccelJSON = cnewJSONObject();
+  AccelJSON = caddKeyValuePair(AccelJSON, cx, cax);
+  AccelJSON = caddKeyValuePair(AccelJSON, cy, cay);
+  AccelJSON = caddKeyValuePair(AccelJSON, cz, caz);
+  DatapointJSON = caddKeyObjectPair(DatapointJSON, ca, AccelJSON);
+  
+
+  sprintf(cgxarray ,"%" PRId16, gx);
+  sprintf(cgyarray ,"%" PRId16, gy);
+  sprintf(cgzarray ,"%" PRId16, gz);
+
+  free(AccelJSON);
+  free(timestring);
+  
+  return DatapointJSON;
+  
+  }
+
+  char*
+convertGyroscopeToJSON(uint32_t timestamp)
+{
+  char* DatapointJSON = cnewJSONObject();
+  char* timestring = (char*)malloc(10*sizeof(char));
+  strcpy(timestring, "timestamp");
+  char ctimestamparray[20];
+  sprintf(ctimestamparray,"%lu",timestamp);
+  char *ctimestamp = &ctimestamparray[0];
+  DatapointJSON = caddKeyValuePair(DatapointJSON, timestring, ctimestamp);
+
+  sprintf(cgxarray ,"%" PRId16, gx);
+  sprintf(cgyarray ,"%" PRId16, gy);
+  sprintf(cgzarray ,"%" PRId16, gz);
+  
+  char* GyroJSON = cnewJSONObject();
+  GyroJSON = caddKeyValuePair(GyroJSON, cx, cgx);
+  GyroJSON = caddKeyValuePair(GyroJSON, cy, cgy);
+  GyroJSON = caddKeyValuePair(GyroJSON, cz, cgz);
+  DatapointJSON = caddKeyObjectPair(DatapointJSON, cg, GyroJSON);
+
+  free(GyroJSON);
+  free(timestring);
+  
+  return DatapointJSON;
+  
+  }
+
+
+
 /************************************************************
  * Utilities
 *************************************************************/
@@ -460,22 +720,15 @@ void wake()
   // Clear sleep mode bit (6), enable all sensors
   writeByte(MPU9250_ADDRESS, PWR_MGMT_1, 0x00);
   delay(10); // Wait for all registers to reset
-  sleeping = false;;
+  sleeping = 0;
 }
 
 void sleep()
 {
   writeByte(MPU9250_ADDRESS, PWR_MGMT_1, 0x40);
   delay(10); // Wait for all registers to reset 
-  sleeping = true;
+  sleeping = 1;
 }
-
-
-
-
-
-
-
 
 
 /*********
