@@ -51,11 +51,11 @@ int16_t mx, my, mz; //unit: ???
 
 
 //Converted readings
-int16_t roll = 0;
-int16_t pitch = 0;
-int16_t yaw = 0;
+int16_t roll;// = 0;
+int16_t pitch;// = 0;
+int16_t yaw;// = 0;
 
-//double timestamp;
+
 
 //Output
 String response;
@@ -73,30 +73,38 @@ String response;
  * userDelay => in outputMode = 0 remember to put delay to 0. otherwise choose self
 *************************************************************/
 
-int outputRangeMin = 0; //mapping
-int outputRangeMax = 9;
-int outputMode = 0;
-int userDelay = 35; //delay in ms//currently makes sampling rate approx 20Hz
+int outputRangeMin;// = 0; //mapping
+int outputRangeMax;// = 9;
+int outputMode;// = 0;
+int userDelay;// = 35; //delay in ms//currently makes sampling rate approx 20Hz
 
 /************************************************************
  * Flags
 *************************************************************/
-char sleeping = 1; //not in use?
+char sleeping;// = 1; //not in use?
 
+//the letter names. Stupid solution, but works
 char * cx = (char*)malloc(sizeof(char)*2);
 char * cy = (char*)malloc(sizeof(char)*2);
 char * cz = (char*)malloc(sizeof(char)*2);
 char * ca = (char*)malloc(sizeof(char)*2);
 char * cg = (char*)malloc(sizeof(char)*2);
 char * cm = (char*)malloc(sizeof(char)*2);
+char * croll = (char*)malloc(sizeof(char)*5);
+char * cpitch = (char*)malloc(sizeof(char)*6);
+char * cyaw = (char*)malloc(sizeof(char)*4);
 
 
-char caxarray[5];
-char cayarray[5];
-char cazarray[5];
-char cgxarray[6];
-char cgyarray[6];
-char cgzarray[6];
+char caxarray[5]; //acceleration x char array
+char cayarray[5]; //acceleration y char array
+char cazarray[5]; //acceleration z char array
+char cgxarray[6]; //gyroscope x char array
+char cgyarray[6]; //gyroscope y char array
+char cgzarray[6]; //gyroscope z char array
+char crollarray[6];  //roll char array
+char cpitcharray[6];  //pitch char array
+char cyawarray[6];  //yaw char array
+
 
 char *cax = &caxarray[0];
 char *cay = &cayarray[0];
@@ -104,6 +112,9 @@ char *caz = &cazarray[0];
 char *cgx = &cgxarray[0];
 char *cgy = &cgyarray[0];
 char *cgz = &cgzarray[0];
+char *caroll = &cgxarray[0];
+char *capitch = &cgyarray[0];
+char *cayaw = &cgzarray[0];
   
 /*----------------------------------------------------------
  * Structures
@@ -117,6 +128,16 @@ struct Main_memory {
 };
 
 Main_memory main_memory;
+
+int32_t time_offset;// = 0;
+
+int32_t 
+synchronise(int32_t *oldoffset, 
+            int32_t newoffset) 
+  {
+    *oldoffset += newoffset;
+    return *oldoffset;
+  }
   
 /*----------------------------------------------------------
  * Setup
@@ -129,6 +150,22 @@ void setup() {
   strcpy(ca, "a\0");
   strcpy(cg, "g\0");
   strcpy(cm, "m\0");
+  strcpy(croll, "roll\0");
+  strcpy(cpitch, "pitch\0");
+  strcpy(cyaw, "yaw\0");
+  time_offset = 0;
+  //synchronise(time_offset, 1);
+  sleeping = 1; //not in use?
+  roll = 0;
+  pitch = 0;
+  yaw = 0;
+  outputRangeMin = 0; //mapping
+  outputRangeMax = 9;
+  outputMode = 0;
+  userDelay = 35; //delay in ms//currently makes sampling rate approx 20Hz
+
+
+  
   /*********
    * LED to tell powered
   ***********/
@@ -168,10 +205,13 @@ void setup() {
 ------------------------------------------------------------*/
 
 void loop() {
-  
+
+  /****
+   * Take samples and write to serial
+  ******/
   readAcceleration();
   
-  uint32_t timestamp = millis();
+  uint32_t timestamp = millis() + time_offset;
 
   //generate sample
   char* accelerationData = convertAccelerationToJSON(timestamp);
@@ -195,8 +235,45 @@ void loop() {
   free(accelerationData);
 
 
+  
+  /****
+   * featured data
+  ******/
+/*
+ * //something is wrong with this
+  roll = 180 * atan (ax/sqrt(ay*ay + az*az))/PI;
+  pitch = 180 * atan (ay/sqrt(ax*ax + az*az))/PI;
+//  yaw =   floor(degrees(atan2(my,mx))); //too lazy to think about this, yaw not necessary
+
+char* rpyData = convertRPYToJSON(timestamp);
+  
+  //publish sample
+  buffer[200];
+  sprintf(buffer, "%s\n", rpyData);    
+  Serial.print(buffer);
+  
+  err = copyDataToMemory(rpyData);
+  if (DEBUG) {
+    if (err == -1) {
+      Serial.println("storing to memory failed");
+    }
+    if (err >= 0) {
+      Serial.println("Data stored at "+(String) err+". Next data goes to " + main_memory.next);
+    }
+  }
+  
+  free(rpyData);
+
+*/
+
+
+/****
+   * other data
+  ******/
+
+
   readGyroscope();
-  timestamp = millis();
+  timestamp = millis() + time_offset;
 
   char* gyroData = convertGyroscopeToJSON(timestamp);
   
@@ -221,13 +298,8 @@ void loop() {
   readMagnetometer();
   
   readTemp();
-  /****
-   * Output prepared
-  ******/
 
-  roll = 180 * atan (ax/sqrt(ay*ay + az*az))/PI;
-  pitch = 180 * atan (ay/sqrt(ax*ax + az*az))/PI;
-  yaw =   floor(degrees(atan2(my,mx))); //too lazy to think about this, yaw not necessary
+
 
 
   
@@ -321,11 +393,18 @@ void loop() {
       }
       Serial.flush();
     } 
+    
     else if(incomingByte == 63) //'?' is starting symbol
     {
       while (Serial.available() > 0) {
         incomingByte = Serial.read();
+        int32_t additional_offset = 0;
         switch(incomingByte) {
+          case 't':
+            additional_offset = Serial.parseInt();
+            synchronise(&time_offset, additional_offset);
+            response = "time offset by additional " + (String)additional_offset + ", current offset = " + (String) time_offset;
+            break;
           case 's': 
             sleep(); 
             response = "sleeping:1";
@@ -596,7 +675,35 @@ char
 
 
 char*
-convertAccelerationToJSON(uint32_t timestamp)
+convertRPYToJSON(int32_t timestamp)
+{
+  char* DatapointJSON = cnewJSONObject();
+  char* timestring = (char*)malloc(10*sizeof(char));
+  strcpy(timestring, "timestamp");
+  char ctimestamparray[20];
+  sprintf(ctimestamparray,"%lu",timestamp);
+  char *ctimestamp = &ctimestamparray[0];
+  DatapointJSON = caddKeyValuePair(DatapointJSON, timestring, ctimestamp);
+
+  sprintf(crollarray ,"%" PRId16, roll);
+  sprintf(cpitcharray ,"%" PRId16, pitch);
+  sprintf(cyawarray ,"%" PRId16, yaw);
+  
+  
+  caddKeyValuePair(DatapointJSON, croll, caroll);
+  caddKeyValuePair(DatapointJSON, cpitch, capitch);
+  //caddKeyValuePair(DatapointJSON, cyaw, cayaw);
+  
+
+  free(timestring);
+  
+  return DatapointJSON;
+  
+  }
+
+
+char*
+convertAccelerationToJSON(int32_t timestamp)
 {
   char* DatapointJSON = cnewJSONObject();
   char* timestring = (char*)malloc(10*sizeof(char));
@@ -617,9 +724,9 @@ convertAccelerationToJSON(uint32_t timestamp)
   DatapointJSON = caddKeyObjectPair(DatapointJSON, ca, AccelJSON);
   
 
-  sprintf(cgxarray ,"%" PRId16, gx);
-  sprintf(cgyarray ,"%" PRId16, gy);
-  sprintf(cgzarray ,"%" PRId16, gz);
+//  sprintf(cgxarray ,"%" PRId16, gx);
+//  sprintf(cgyarray ,"%" PRId16, gy);
+//  sprintf(cgzarray ,"%" PRId16, gz);
 
   free(AccelJSON);
   free(timestring);
@@ -629,7 +736,7 @@ convertAccelerationToJSON(uint32_t timestamp)
   }
 
   char*
-convertGyroscopeToJSON(uint32_t timestamp)
+convertGyroscopeToJSON(int32_t timestamp)
 {
   char* DatapointJSON = cnewJSONObject();
   char* timestring = (char*)malloc(10*sizeof(char));
@@ -741,7 +848,7 @@ uint8_t writeByteWire(uint8_t deviceAddress, uint8_t registerAddress, uint8_t da
   Wire.write(data);                 // Put data in Tx buffer
   Wire.endTransmission();           // Send the Tx buffer
   // TODO: Fix this to return something meaningful
-  return NULL;
+  return 0;
 }
 
 uint8_t writeByte(uint8_t deviceAddress, uint8_t registerAddress, uint8_t data) {
